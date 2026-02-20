@@ -1,0 +1,28 @@
+# Binaries
+kurokku
+kurokku-pi
+
+# Test coverage
+coverage.out
+coverage.html
+
+# Go build cache / workspace
+/vendor/
+go.work
+go.work.sum
+
+# macOS
+.DS_Store
+
+# Claude Code local settings
+.claude/
+
+# Editor directories
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment / secrets
+.env
+*.env.local

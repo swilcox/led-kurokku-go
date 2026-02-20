@@ -1,0 +1,59 @@
+{
+  "brightness": {
+    "high": 12,
+    "low": 2,
+    "day_start": "07:00",
+    "day_end": "22:00"
+  },
+  "widgets": [
+    {
+      "type": "clock",
+      "enabled": true,
+      "duration": "30s",
+      "format_24h": false
+    },
+    {
+      "type": "message",
+      "enabled": true,
+      "duration": "10s",
+      "text": "Hello World!",
+      "scroll_speed": "50ms",
+      "repeats": 2,
+      "sleep_between": "1s"
+    },
+    {
+      "type": "alert",
+      "enabled": true,
+      "duration": "30s",
+      "scroll_speed": "50ms",
+      "alerts": [
+        {
+          "id": "weather",
+          "message": "Heat advisory: 102°F",
+          "priority": 1,
+          "display_duration": "10s",
+          "delete_after_display": false
+        },
+        {
+          "id": "reminder",
+          "message": "Take out the trash",
+          "priority": 5,
+          "display_duration": "8s",
+          "delete_after_display": true
+        }
+      ]
+    },
+    {
+      "type": "animation",
+      "enabled": true,
+      "duration": "10s",
+      "animation_type": "rain"
+    },
+    {
+      "type": "animation",
+      "enabled": true,
+      "duration": "5s",
+      "animation_type": "random"
+    }
+  ]
+}

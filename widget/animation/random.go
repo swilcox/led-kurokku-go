@@ -1,0 +1,34 @@
+package animation
+
+import (
+	"context"
+	"math/rand"
+	"time"
+
+	"github.com/swilcox/led-kurokku-go/display"
+	"github.com/swilcox/led-kurokku-go/framebuf"
+)
+
+// Random displays TV-static random pixel noise.
+type Random struct{}
+
+func (r *Random) Name() string { return "random" }
+
+func (r *Random) Run(ctx context.Context, disp display.Display) error {
+	ticker := time.NewTicker(50 * time.Millisecond)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-ticker.C:
+		}
+
+		var f framebuf.Frame
+		for x := 0; x < 32; x++ {
+			f[x] = byte(rand.Intn(256))
+		}
+		disp.WriteFramebuffer(f.Bytes())
+	}
+}
