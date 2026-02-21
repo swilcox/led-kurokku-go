@@ -52,11 +52,15 @@ All display behavior is driven by `config.json`. Widgets cycle in order; each ru
 
 ```json
 {
+  "location": {
+    "lat": 36.166,
+    "lon": -86.784,
+    "timezone": "America/Chicago"
+  },
   "brightness": {
     "high": 12,
     "low": 2,
-    "day_start": "07:00",
-    "day_end": "22:00"
+    "use_location": true
   },
   "widgets": [
     {
@@ -116,6 +120,58 @@ All display behavior is driven by `config.json`. Widgets cycle in order; each ru
 | `message`   | Static or scrolling text. Supports `dynamic_source` for Redis-backed text. |
 | `alert`     | Displays prioritized alerts. With Redis, fetches from `kurokku:alert:*` keys; without, uses the `alerts` array as fallback. |
 | `animation` | Frame-based or procedural animations (`rain`, `random`, or custom `frames`). |
+
+### Brightness
+
+The `brightness` block controls display intensity based on time of day. Two modes are available:
+
+**Location-based (recommended)** — set a top-level `location` block and enable `use_location`. Sunrise and sunset are computed automatically each day using your coordinates, so the schedule stays correct year-round without manual adjustment.
+
+```json
+{
+  "location": {
+    "lat": 36.166,
+    "lon": -86.784,
+    "timezone": "America/Chicago"
+  },
+  "brightness": {
+    "high": 12,
+    "low": 2,
+    "use_location": true
+  }
+}
+```
+
+**Fixed times** — specify explicit `day_start` and `day_end` in `HH:MM` (24-hour) format.
+
+```json
+{
+  "brightness": {
+    "high": 12,
+    "low": 2,
+    "day_start": "07:00",
+    "day_end": "22:00"
+  }
+}
+```
+
+If `use_location` is true but no `location` block is present, or the timezone is invalid, the display defaults to `high` brightness and logs a warning.
+
+| Field          | Description |
+|----------------|-------------|
+| `high`         | Brightness level during the day (0–15) |
+| `low`          | Brightness level at night (0–15) |
+| `use_location` | Derive day/night window from sunrise/sunset at the configured location |
+| `day_start`    | Start of bright period, `HH:MM` (used when `use_location` is false) |
+| `day_end`      | End of bright period, `HH:MM` (used when `use_location` is false) |
+
+The `location` block is a top-level optional field consumed by any feature that needs geographic context (currently brightness; future candidates include weather widgets).
+
+| Field      | Description |
+|------------|-------------|
+| `lat`      | Latitude in decimal degrees |
+| `lon`      | Longitude in decimal degrees |
+| `timezone` | IANA timezone name (e.g. `America/Chicago`) |
 
 ### Message `dynamic_source`
 
