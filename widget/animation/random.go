@@ -15,6 +15,8 @@ type Random struct{}
 func (r *Random) Name() string { return "random" }
 
 func (r *Random) Run(ctx context.Context, disp display.Display) error {
+	pd := disp.(display.PixelDisplay)
+
 	ticker := time.NewTicker(50 * time.Millisecond)
 	defer ticker.Stop()
 
@@ -29,6 +31,6 @@ func (r *Random) Run(ctx context.Context, disp display.Display) error {
 		for x := 0; x < 32; x++ {
 			f[x] = byte(rand.Intn(256))
 		}
-		disp.WriteFramebuffer(f.Bytes())
+		pd.WriteFramebuffer(f.Bytes())
 	}
 }

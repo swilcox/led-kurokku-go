@@ -25,6 +25,8 @@ func (c *Clock) now() time.Time {
 func (c *Clock) Name() string { return "clock" }
 
 func (c *Clock) Run(ctx context.Context, disp display.Display) error {
+	pd := disp.(display.PixelDisplay)
+
 	for {
 		now := c.now()
 		hour := now.Hour()
@@ -48,31 +50,31 @@ func (c *Clock) Run(ctx context.Context, disp display.Display) error {
 
 		if !c.Format24h && isPM {
 			// PM double blink: 150ms on, 200ms off, 150ms on, 500ms off
-			if err := c.showText(ctx, disp, colonOn, 150*time.Millisecond); err != nil {
+			if err := c.showText(ctx, pd, colonOn, 150*time.Millisecond); err != nil {
 				return err
 			}
-			if err := c.showText(ctx, disp, colonOff, 200*time.Millisecond); err != nil {
+			if err := c.showText(ctx, pd, colonOff, 200*time.Millisecond); err != nil {
 				return err
 			}
-			if err := c.showText(ctx, disp, colonOn, 150*time.Millisecond); err != nil {
+			if err := c.showText(ctx, pd, colonOn, 150*time.Millisecond); err != nil {
 				return err
 			}
-			if err := c.showText(ctx, disp, colonOff, 500*time.Millisecond); err != nil {
+			if err := c.showText(ctx, pd, colonOff, 500*time.Millisecond); err != nil {
 				return err
 			}
 		} else {
 			// 24h or AM: 500ms on, 500ms off
-			if err := c.showText(ctx, disp, colonOn, 500*time.Millisecond); err != nil {
+			if err := c.showText(ctx, pd, colonOn, 500*time.Millisecond); err != nil {
 				return err
 			}
-			if err := c.showText(ctx, disp, colonOff, 500*time.Millisecond); err != nil {
+			if err := c.showText(ctx, pd, colonOff, 500*time.Millisecond); err != nil {
 				return err
 			}
 		}
 	}
 }
 
-func (c *Clock) showText(ctx context.Context, disp display.Display, text string, d time.Duration) error {
+func (c *Clock) showText(ctx context.Context, disp display.PixelDisplay, text string, d time.Duration) error {
 	var f framebuf.Frame
 	w := framebuf.BlitText(&f, text, 0)
 	// Center the text

@@ -15,6 +15,8 @@ type Rain struct{}
 func (r *Rain) Name() string { return "rain" }
 
 func (r *Rain) Run(ctx context.Context, disp display.Display) error {
+	pd := disp.(display.PixelDisplay)
+
 	// Each column has a drop position (-1 = inactive)
 	var drops [32]int
 	for i := range drops {
@@ -57,6 +59,6 @@ func (r *Rain) Run(ctx context.Context, disp display.Display) error {
 			}
 		}
 
-		disp.WriteFramebuffer(f.Bytes())
+		pd.WriteFramebuffer(f.Bytes())
 	}
 }

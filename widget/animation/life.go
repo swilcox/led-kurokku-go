@@ -16,6 +16,8 @@ type Life struct{}
 func (l *Life) Name() string { return "life" }
 
 func (l *Life) Run(ctx context.Context, disp display.Display) error {
+	pd := disp.(display.PixelDisplay)
+
 	grid := lifeNewGrid()
 	stagnant := 0
 
@@ -39,7 +41,7 @@ func (l *Life) Run(ctx context.Context, disp display.Display) error {
 				}
 			}
 		}
-		disp.WriteFramebuffer(f.Bytes())
+		pd.WriteFramebuffer(f.Bytes())
 
 		if next == grid {
 			stagnant++

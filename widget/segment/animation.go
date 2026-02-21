@@ -1,4 +1,4 @@
-package animation
+package segment
 
 import (
 	"context"
@@ -6,20 +6,19 @@ import (
 
 	"github.com/swilcox/led-kurokku-go/config"
 	"github.com/swilcox/led-kurokku-go/display"
-	"github.com/swilcox/led-kurokku-go/framebuf"
 	"github.com/swilcox/led-kurokku-go/widget"
 )
 
-// FrameAnimation plays a list of pre-defined frames in a loop.
+// FrameAnimation plays a list of pre-defined segment frames in a loop.
 type FrameAnimation struct {
-	Frames        []config.FrameConfig
+	Frames        []config.SegmentFrameConfig
 	FrameDuration time.Duration
 }
 
-func (a *FrameAnimation) Name() string { return "animation" }
+func (a *FrameAnimation) Name() string { return "segment-animation" }
 
 func (a *FrameAnimation) Run(ctx context.Context, disp display.Display) error {
-	pd := disp.(display.PixelDisplay)
+	sd := disp.(display.SegmentDisplay)
 
 	if len(a.Frames) == 0 {
 		return nil
@@ -27,9 +26,7 @@ func (a *FrameAnimation) Run(ctx context.Context, disp display.Display) error {
 
 	for {
 		for _, fc := range a.Frames {
-			var f framebuf.Frame
-			f = fc.Data
-			pd.WriteFramebuffer(f.Bytes())
+			sd.WriteSegments(fc.Data, fc.Colon)
 
 			dur := fc.Duration.Unwrap()
 			if dur == 0 {

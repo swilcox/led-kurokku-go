@@ -11,8 +11,10 @@ import (
 	"github.com/swilcox/led-kurokku-go/display"
 	"github.com/swilcox/led-kurokku-go/internal/cronutil"
 	"github.com/swilcox/led-kurokku-go/redis"
+	"github.com/swilcox/led-kurokku-go/segfont"
 	"github.com/swilcox/led-kurokku-go/widget"
 	"github.com/swilcox/led-kurokku-go/widget/animation"
+	"github.com/swilcox/led-kurokku-go/widget/segment"
 )
 
 // redisStore is the interface the engine uses to interact with Redis.
@@ -128,28 +130,50 @@ func (e *Engine) runInterruptAlerts(ctx context.Context) {
 		return
 	}
 
-	a := &widget.Alert{
-		Alerts:      alerts,
-		ScrollSpeed: 50 * time.Millisecond,
-		OnDelete: func(ctx context.Context, id string) {
-			if err := e.rds.DeleteAlert(ctx, id); err != nil {
-				log.Printf("redis alert delete %s: %v", id, err)
-			}
-		},
-	}
-
-	// Give alerts a generous timeout so they can all display.
 	timeout := time.Duration(len(alerts)) * 10 * time.Second
 	alertCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	a.Run(alertCtx, e.disp)
+	if e.cfg.Display.IsSegment() {
+		a := &segment.Alert{
+			Alerts:      alerts,
+			ScrollSpeed: 300 * time.Millisecond,
+			Encoder:     e.segmentEncoder(),
+			OnDelete: func(ctx context.Context, id string) {
+				if err := e.rds.DeleteAlert(ctx, id); err != nil {
+					log.Printf("redis alert delete %s: %v", id, err)
+				}
+			},
+		}
+		a.Run(alertCtx, e.disp)
+	} else {
+		a := &widget.Alert{
+			Alerts:      alerts,
+			ScrollSpeed: 50 * time.Millisecond,
+			OnDelete: func(ctx context.Context, id string) {
+				if err := e.rds.DeleteAlert(ctx, id); err != nil {
+					log.Printf("redis alert delete %s: %v", id, err)
+				}
+			},
+		}
+		a.Run(alertCtx, e.disp)
+	}
+}
+
+func (e *Engine) segmentEncoder() segfont.Encoder {
+	switch e.cfg.Display.Type {
+	case config.DisplayTM1637, config.DisplayTerminalSeg7:
+		return segfont.Enc7
+	default:
+		return segfont.Enc14
+	}
 }
 
 func (e *Engine) buildWidgets() ([]widget.Widget, []time.Duration, []string) {
 	var widgets []widget.Widget
 	var durations []time.Duration
 	var crons []string
+	isSeg := e.cfg.Display.IsSegment()
 
 	for _, wc := range e.cfg.Widgets {
 		if !wc.Enabled {
@@ -163,56 +187,106 @@ func (e *Engine) buildWidgets() ([]widget.Widget, []time.Duration, []string) {
 			if wc.Format24h != nil {
 				format24h = *wc.Format24h
 			}
-			w = &widget.Clock{Format24h: format24h}
+			if isSeg {
+				w = &segment.Clock{Format24h: format24h, Encoder: e.segmentEncoder()}
+			} else {
+				w = &widget.Clock{Format24h: format24h}
+			}
 
 		case "message":
 			repeats := 1
 			if wc.Repeats != nil {
 				repeats = *wc.Repeats
 			}
-			if e.rds != nil && wc.DynamicSource != "" {
-				w = &widget.RedisMessage{
-					Fetcher:      e.rds,
-					Key:          wc.DynamicSource,
-					FallbackText: wc.Text,
-					ScrollSpeed:  wc.ScrollSpeed.Unwrap(),
-					Repeats:      repeats,
-					SleepBetween: wc.SleepBetween.Unwrap(),
+			if isSeg {
+				if e.rds != nil && wc.DynamicSource != "" {
+					w = &segment.RedisMessage{
+						Fetcher:      e.rds,
+						Key:          wc.DynamicSource,
+						FallbackText: wc.Text,
+						ScrollSpeed:  wc.ScrollSpeed.Unwrap(),
+						Repeats:      repeats,
+						SleepBetween: wc.SleepBetween.Unwrap(),
+						Encoder:      e.segmentEncoder(),
+					}
+				} else {
+					w = &segment.Message{
+						Text:         wc.Text,
+						ScrollSpeed:  wc.ScrollSpeed.Unwrap(),
+						Repeats:      repeats,
+						SleepBetween: wc.SleepBetween.Unwrap(),
+						Encoder:      e.segmentEncoder(),
+					}
 				}
 			} else {
-				w = &widget.Message{
-					Text:         wc.Text,
-					ScrollSpeed:  wc.ScrollSpeed.Unwrap(),
-					Repeats:      repeats,
-					SleepBetween: wc.SleepBetween.Unwrap(),
+				if e.rds != nil && wc.DynamicSource != "" {
+					w = &widget.RedisMessage{
+						Fetcher:      e.rds,
+						Key:          wc.DynamicSource,
+						FallbackText: wc.Text,
+						ScrollSpeed:  wc.ScrollSpeed.Unwrap(),
+						Repeats:      repeats,
+						SleepBetween: wc.SleepBetween.Unwrap(),
+					}
+				} else {
+					w = &widget.Message{
+						Text:         wc.Text,
+						ScrollSpeed:  wc.ScrollSpeed.Unwrap(),
+						Repeats:      repeats,
+						SleepBetween: wc.SleepBetween.Unwrap(),
+					}
 				}
 			}
 
 		case "alert":
-			if e.rds != nil {
-				w = &widget.RedisAlert{
-					Fetcher:     e.rds,
-					Fallback:    wc.Alerts,
-					ScrollSpeed: wc.ScrollSpeed.Unwrap(),
+			if isSeg {
+				if e.rds != nil {
+					w = &segment.RedisAlert{
+						Fetcher:     e.rds,
+						Fallback:    wc.Alerts,
+						ScrollSpeed: wc.ScrollSpeed.Unwrap(),
+						Encoder:     e.segmentEncoder(),
+					}
+				} else {
+					w = &segment.Alert{
+						Alerts:      wc.Alerts,
+						ScrollSpeed: wc.ScrollSpeed.Unwrap(),
+						Encoder:     e.segmentEncoder(),
+					}
 				}
 			} else {
-				w = &widget.Alert{
-					Alerts:      wc.Alerts,
-					ScrollSpeed: wc.ScrollSpeed.Unwrap(),
+				if e.rds != nil {
+					w = &widget.RedisAlert{
+						Fetcher:     e.rds,
+						Fallback:    wc.Alerts,
+						ScrollSpeed: wc.ScrollSpeed.Unwrap(),
+					}
+				} else {
+					w = &widget.Alert{
+						Alerts:      wc.Alerts,
+						ScrollSpeed: wc.ScrollSpeed.Unwrap(),
+					}
 				}
 			}
 
 		case "animation":
-			if wc.AnimationType == "frames" || wc.AnimationType == "" {
-				w = &animation.FrameAnimation{
-					Frames:        wc.Frames,
+			if isSeg {
+				w = &segment.FrameAnimation{
+					Frames:        wc.SegmentFrames,
 					FrameDuration: wc.FrameDuration.Unwrap(),
 				}
-			} else if factory, ok := animation.Registry[wc.AnimationType]; ok {
-				w = factory()
 			} else {
-				log.Printf("unknown animation type: %s", wc.AnimationType)
-				continue
+				if wc.AnimationType == "frames" || wc.AnimationType == "" {
+					w = &animation.FrameAnimation{
+						Frames:        wc.Frames,
+						FrameDuration: wc.FrameDuration.Unwrap(),
+					}
+				} else if factory, ok := animation.Registry[wc.AnimationType]; ok {
+					w = factory()
+				} else {
+					log.Printf("unknown animation type: %s", wc.AnimationType)
+					continue
+				}
 			}
 
 		default:

@@ -20,15 +20,17 @@ type Message struct {
 func (m *Message) Name() string { return "message" }
 
 func (m *Message) Run(ctx context.Context, disp display.Display) error {
+	pd := disp.(display.PixelDisplay)
+
 	cols := font.RenderText(m.Text)
 	textWidth := len(cols)
 
-	if textWidth <= disp.Width() {
+	if textWidth <= pd.Width() {
 		// Static display, centered
 		var f framebuf.Frame
 		offset := (32 - textWidth) / 2
 		framebuf.BlitText(&f, m.Text, offset)
-		disp.WriteFramebuffer(f.Bytes())
+		pd.WriteFramebuffer(f.Bytes())
 		// Hold until context is done
 		<-ctx.Done()
 		return ctx.Err()
@@ -43,5 +45,5 @@ func (m *Message) Run(ctx context.Context, disp display.Display) error {
 	if repeats == 0 {
 		repeats = 1
 	}
-	return ScrollText(ctx, disp, m.Text, speed, repeats, m.SleepBetween)
+	return ScrollText(ctx, pd, m.Text, speed, repeats, m.SleepBetween)
 }

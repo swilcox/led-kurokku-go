@@ -14,6 +14,8 @@ type Bounce struct{}
 func (b *Bounce) Name() string { return "bounce" }
 
 func (b *Bounce) Run(ctx context.Context, disp display.Display) error {
+	pd := disp.(display.PixelDisplay)
+
 	x, y := 16.0, 4.0
 	dx, dy := 0.7, 0.5
 
@@ -56,6 +58,6 @@ func (b *Bounce) Run(ctx context.Context, disp display.Display) error {
 		f.SetPixel(ppx, ppy, true)
 		f.SetPixel(px, py, true)
 		f.SetPixel(int(x), int(y), true)
-		disp.WriteFramebuffer(f.Bytes())
+		pd.WriteFramebuffer(f.Bytes())
 	}
 }

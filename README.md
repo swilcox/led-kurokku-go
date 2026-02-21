@@ -1,20 +1,16 @@
 # LED Kurokku Go
 
-A Go application to drive a MAX7219 4-in-1 32x8 LED matrix on Raspberry Pi, with a widget-based display system and optional Redis integration for dynamic content.
+A Go application to drive LED displays on Raspberry Pi, with a widget-based display system and optional Redis integration for dynamic content.
 
-## Raspberry Pi Wiring
+## Supported Hardware
 
-Connect the MAX7219 module to the Raspberry Pi SPI0 pins:
+| Display | Type | Interface | Resolution |
+|---------|------|-----------|------------|
+| MAX7219 4-in-1 | Pixel matrix | SPI | 32x8 pixels |
+| TM1637 | 7-segment | GPIO (bit-bang) | 4 digits |
+| HT16K33 | 14-segment | I2C | 4 digits |
 
-| MAX7219 Pin | RPi Pin | RPi GPIO | Description |
-|-------------|---------|----------|-------------|
-| VCC         | Pin 2   | 5V       | Power       |
-| GND         | Pin 6   | GND      | Ground      |
-| DIN         | Pin 19  | GPIO 10  | SPI0 MOSI   |
-| CS          | Pin 24  | GPIO 8   | SPI0 CE0    |
-| CLK         | Pin 23  | GPIO 11  | SPI0 SCLK   |
-
-> **Note:** The MAX7219 module requires 5V power. The logic pins are driven at 3.3V from the Pi's SPI GPIOs, which works reliably with most modules.
+All three hardware types are driven from a single binary and config file. Terminal emulators are provided for development without hardware.
 
 ## Building
 
@@ -29,11 +25,23 @@ make build-pi
 ## Usage
 
 ```bash
-# Terminal display (for development/testing)
+# Pixel matrix — terminal emulator
 ./kurokku -display terminal
 
-# MAX7219 hardware display (on Raspberry Pi)
+# Pixel matrix — MAX7219 hardware
 ./kurokku -display max7219
+
+# 7-segment — terminal emulator
+./kurokku -display terminal_seg7
+
+# 14-segment — terminal emulator
+./kurokku -display terminal_seg14
+
+# TM1637 hardware (requires GPIO pins in config)
+./kurokku -display tm1637
+
+# HT16K33 hardware (requires I2C config)
+./kurokku -display ht16k33
 
 # Custom config file
 ./kurokku -config my-config.json
@@ -43,15 +51,70 @@ make build-pi
 
 | Flag       | Default      | Description                         |
 |------------|--------------|-------------------------------------|
-| `-display` | `terminal`   | Display type: `terminal`, `max7219` |
+| `-display` | *(from config, or `terminal`)* | Display type override |
 | `-config`  | `config.json`| Path to JSON config file            |
+
+The `-display` flag overrides the `display.type` field in the config file. If neither is set, it defaults to `terminal`.
 
 ## Configuration
 
-All display behavior is driven by `config.json`. Widgets cycle in order; each runs for its configured `duration` (use `"0s"` or omit for no timeout — the widget runs until done).
+All display behavior is driven by a JSON config file. Widgets cycle in order; each runs for its configured `duration` (use `"0s"` or omit for no timeout — the widget runs until done).
+
+### Display Block
+
+The `display` block selects the hardware backend and its settings:
 
 ```json
 {
+  "display": {
+    "type": "terminal"
+  }
+}
+```
+
+**Pixel displays:**
+
+```json
+{ "display": { "type": "max7219" } }
+```
+
+**Segment displays:**
+
+```json
+{
+  "display": {
+    "type": "tm1637",
+    "clk_pin": "GPIO23",
+    "dio_pin": "GPIO24"
+  }
+}
+```
+
+```json
+{
+  "display": {
+    "type": "ht16k33",
+    "i2c_bus": "",
+    "i2c_addr": 112,
+    "layout": "adafruit"
+  }
+}
+```
+
+| Field      | Used By  | Description |
+|------------|----------|-------------|
+| `type`     | All      | `terminal`, `max7219`, `tm1637`, `ht16k33`, `terminal_seg7`, `terminal_seg14` |
+| `clk_pin`  | TM1637   | GPIO clock pin name (e.g. `"GPIO23"`) |
+| `dio_pin`  | TM1637   | GPIO data pin name (e.g. `"GPIO24"`) |
+| `i2c_addr` | HT16K33  | I2C address (default `0x70` / `112`) |
+| `i2c_bus`  | HT16K33  | I2C bus name (empty for default) |
+| `layout`   | HT16K33  | `"sequential"` (default) or `"adafruit"` |
+
+### Full Example (Pixel)
+
+```json
+{
+  "display": { "type": "terminal" },
   "location": {
     "lat": 36.166,
     "lon": -86.784,
@@ -79,25 +142,16 @@ All display behavior is driven by `config.json`. Widgets cycle in order; each ru
       "sleep_between": "1s"
     },
     {
-      "type": "message",
-      "enabled": true,
-      "duration": "10s",
-      "text": "--\u00b0F",
-      "dynamic_source": "kurokku:weather:temp:spring_hill",
-      "scroll_speed": "50ms",
-      "repeats": 1
-    },
-    {
       "type": "alert",
       "enabled": true,
-      "duration": "0s",
+      "duration": "30s",
       "scroll_speed": "50ms",
       "alerts": [
         {
-          "id": "fallback",
-          "message": "No alerts",
-          "priority": 99,
-          "display_duration": "3s",
+          "id": "weather",
+          "message": "Heat advisory: 102F",
+          "priority": 1,
+          "display_duration": "10s",
           "delete_after_display": false
         }
       ]
@@ -112,84 +166,92 @@ All display behavior is driven by `config.json`. Widgets cycle in order; each ru
 }
 ```
 
-### Widget Types
-
-| Type        | Description |
-|-------------|-------------|
-| `clock`     | Displays time with blinking colon. Set `format_24h` for 24-hour format. |
-| `message`   | Static or scrolling text. Supports `dynamic_source` for Redis-backed text. |
-| `alert`     | Displays prioritized alerts. With Redis, fetches from `kurokku:alert:*` keys; without, uses the `alerts` array as fallback. |
-| `animation` | Frame-based or procedural animations (`rain`, `random`, or custom `frames`). |
-
-### Brightness
-
-The `brightness` block controls display intensity based on time of day. Two modes are available:
-
-**Location-based (recommended)** — set a top-level `location` block and enable `use_location`. Sunrise and sunset are computed automatically each day using your coordinates, so the schedule stays correct year-round without manual adjustment.
+### Full Example (7-Segment)
 
 ```json
 {
-  "location": {
-    "lat": 36.166,
-    "lon": -86.784,
-    "timezone": "America/Chicago"
+  "display": {
+    "type": "tm1637",
+    "clk_pin": "GPIO23",
+    "dio_pin": "GPIO24"
   },
-  "brightness": {
-    "high": 12,
-    "low": 2,
-    "use_location": true
-  }
-}
-```
-
-**Fixed times** — specify explicit `day_start` and `day_end` in `HH:MM` (24-hour) format.
-
-```json
-{
   "brightness": {
     "high": 12,
     "low": 2,
     "day_start": "07:00",
     "day_end": "22:00"
-  }
+  },
+  "widgets": [
+    {
+      "type": "clock",
+      "enabled": true,
+      "duration": "30s",
+      "format_24h": true
+    },
+    {
+      "type": "message",
+      "enabled": true,
+      "duration": "10s",
+      "text": "HELLO",
+      "scroll_speed": "300ms",
+      "repeats": 2
+    }
+  ]
 }
 ```
 
-If `use_location` is true but no `location` block is present, or the timezone is invalid, the display defaults to `high` brightness and logs a warning.
+### Widget Types
 
-| Field          | Description |
-|----------------|-------------|
-| `high`         | Brightness level during the day (0–15) |
-| `low`          | Brightness level at night (0–15) |
-| `use_location` | Derive day/night window from sunrise/sunset at the configured location |
-| `day_start`    | Start of bright period, `HH:MM` (used when `use_location` is false) |
-| `day_end`      | End of bright period, `HH:MM` (used when `use_location` is false) |
+| Type        | Pixel | Segment | Description |
+|-------------|:-----:|:-------:|-------------|
+| `clock`     | Yes | Yes | Time display with blinking colon. Set `format_24h` for 24-hour format. 12h PM uses double-blink pattern. |
+| `message`   | Yes | Yes | Static or scrolling text. Supports `dynamic_source` for Redis-backed text. Pixel: 50ms scroll speed. Segment: 300ms per character. |
+| `alert`     | Yes | Yes | Displays prioritized alerts. With Redis, fetches from `kurokku:alert:*` keys; without, uses the `alerts` array. |
+| `animation` | Yes | Yes | Pixel: procedural (`rain`, `random`, `bounce`, `sine`, `scanner`, `life`) or custom `frames`. Segment: custom `segment_frames`. |
 
-The `location` block is a top-level optional field consumed by any feature that needs geographic context (currently brightness; future candidates include weather widgets).
+### Cron Scheduling
 
-| Field      | Description |
-|------------|-------------|
-| `lat`      | Latitude in decimal degrees |
-| `lon`      | Longitude in decimal degrees |
-| `timezone` | IANA timezone name (e.g. `America/Chicago`) |
-
-### Message `dynamic_source`
-
-When `dynamic_source` is set and Redis is connected, the message widget fetches its text from that Redis key each cycle. If the key doesn't exist or Redis is unavailable, it falls back to the `text` field.
+Any widget can include a `cron` field with a standard cron expression. The widget is skipped when the expression doesn't match the current time:
 
 ```json
 {
   "type": "message",
   "enabled": true,
   "duration": "10s",
-  "text": "--\u00b0F",
-  "dynamic_source": "kurokku:weather:temp:spring_hill",
-  "scroll_speed": "50ms"
+  "text": "Lunch time!",
+  "cron": "0 12 * * *"
 }
 ```
 
+### Brightness
+
+Two modes:
+
+**Location-based (recommended)** — set a top-level `location` block and enable `use_location`. Sunrise and sunset are computed automatically.
+
+```json
+{
+  "location": { "lat": 36.166, "lon": -86.784, "timezone": "America/Chicago" },
+  "brightness": { "high": 12, "low": 2, "use_location": true }
+}
+```
+
+**Fixed times** — specify `day_start` and `day_end` in `HH:MM` (24-hour) format.
+
+```json
+{
+  "brightness": { "high": 12, "low": 2, "day_start": "07:00", "day_end": "22:00" }
+}
+```
+
+If `use_location` is true but no `location` block is present, or the timezone is invalid, the display defaults to `high` brightness and logs a warning.
+
+### Message `dynamic_source`
+
+When `dynamic_source` is set and Redis is connected, the message widget fetches its text from that Redis key each cycle. If the key doesn't exist or Redis is unavailable, it falls back to the `text` field.
+
 ```bash
-redis-cli SET kurokku:weather:temp:spring_hill "72\u00b0F"
+redis-cli SET kurokku:weather:temp:spring_hill "72F"
 ```
 
 ## Redis Integration (Optional)
@@ -224,9 +286,7 @@ redis-cli SET kurokku:alert:temp-notice '{"message":"Brief notice","priority":3,
 redis-cli DEL kurokku:alert:weather
 ```
 
-The app uses Redis keyspace notifications (`__keyspace@0__:kurokku:alert:*`) to detect changes. When a new alert key is set, it **immediately interrupts** the current widget and displays all pending alerts sorted by priority.
-
-> **Note:** Redis must have keyspace notifications enabled. The app attempts to run `CONFIG SET notify-keyspace-events KEA` on startup. If Redis is configured to disallow this (e.g. managed Redis), enable it in your Redis config: `notify-keyspace-events KEA`.
+The app uses Redis keyspace notifications to detect changes. When a new alert key is set, it **immediately interrupts** the current widget and displays all pending alerts sorted by priority.
 
 ### Alert JSON Fields
 
@@ -237,52 +297,81 @@ The app uses Redis keyspace notifications (`__keyspace@0__:kurokku:alert:*`) to 
 | `display_duration`   | string | How long to show (e.g. `"5s"`) |
 | `delete_after_display` | bool | Remove from Redis after showing |
 
-## Enabling SPI on the Raspberry Pi
+## Hardware Wiring
 
-SPI is disabled by default. Enable it with:
+### MAX7219 (SPI)
 
-```bash
-sudo raspi-config nonint do_spi 0
-```
+| MAX7219 Pin | RPi Pin | RPi GPIO | Description |
+|-------------|---------|----------|-------------|
+| VCC         | Pin 2   | 5V       | Power       |
+| GND         | Pin 6   | GND      | Ground      |
+| DIN         | Pin 19  | GPIO 10  | SPI0 MOSI   |
+| CS          | Pin 24  | GPIO 8   | SPI0 CE0    |
+| CLK         | Pin 23  | GPIO 11  | SPI0 SCLK   |
 
-Or add `dtparam=spi=on` to `/boot/firmware/config.txt` and reboot.
+Enable SPI: `sudo raspi-config nonint do_spi 0`
 
-Verify the SPI device exists:
+### TM1637 (GPIO)
 
-```bash
-ls /dev/spidev0.*
-```
+| TM1637 Pin | RPi Pin | Description |
+|------------|---------|-------------|
+| VCC        | Pin 1   | 3.3V Power  |
+| GND        | Pin 9   | Ground      |
+| CLK        | *(configurable)* | Clock (e.g. GPIO23) |
+| DIO        | *(configurable)* | Data (e.g. GPIO24) |
+
+### HT16K33 (I2C)
+
+| HT16K33 Pin | RPi Pin | Description |
+|-------------|---------|-------------|
+| VIN         | Pin 1   | 3.3V Power  |
+| GND         | Pin 9   | Ground      |
+| SDA         | Pin 3   | I2C1 SDA    |
+| SCL         | Pin 5   | I2C1 SCL    |
+
+Enable I2C: `sudo raspi-config nonint do_i2c 0`
+
+Default I2C address: `0x70`. Change with solder jumpers on the board.
 
 ## Project Structure
 
 ```
-├── cmd/kurokku/main.go    # Entry point, flag parsing, Redis init
-├── config/
-│   └── config.go          # Configuration types and JSON loading
-├── display/
-│   ├── display.go         # Display interface
-│   ├── max7219.go         # MAX7219 4-in-1 matrix driver
-│   └── terminal.go        # Virtual terminal display
-├── engine/
-│   └── engine.go          # Widget cycling loop with interrupt support
-├── font/
-│   └── font5x7.go         # 5x7 bitmap font
-├── framebuf/
-│   └── framebuf.go        # 32x8 framebuffer
-├── redis/
-│   └── redis.go           # Redis client (alerts, messages, keyspace sub)
-├── spi/
-│   └── spi.go             # SPI abstraction (periph.io)
-└── widget/
-    ├── widget.go           # Widget interface
-    ├── clock.go            # Clock widget
-    ├── message.go          # Message widget
-    ├── alert.go            # Alert widget
-    ├── redis_alert.go      # Redis-backed alert wrapper
-    ├── redis_message.go    # Redis-backed message wrapper
-    └── animation/
-        ├── animation.go    # Frame-based animation
-        ├── procedural.go   # Animation registry
-        ├── rain.go         # Rain animation
-        └── random.go       # Random noise animation
+cmd/kurokku/main.go          Entry point, flag parsing, display creation
+config/
+  config.go                   Configuration types, DisplayConfig, JSON loading
+display/
+  display.go                  Display/PixelDisplay/SegmentDisplay interfaces
+  terminal.go                 Terminal pixel emulator
+  terminal_segment.go         Terminal segment emulator (7-seg & 14-seg ASCII art)
+  max7219.go                  MAX7219 SPI driver
+  tm1637.go                   TM1637 GPIO bit-bang driver
+  ht16k33.go                  HT16K33 I2C driver
+  testutil/spy.go             SpyDisplay + SpySegmentDisplay for tests
+engine/
+  engine.go                   Widget cycling loop, segment branching
+font/
+  font5x7.go                  5x7 bitmap font (pixel displays)
+framebuf/
+  framebuf.go                 32x8 framebuffer (pixel displays)
+segfont/
+  segfont.go                  7-seg and 14-seg character maps
+redis/
+  redis.go                    Optional Redis client
+spi/
+  spi.go                      SPI abstraction (periph.io)
+widget/
+  widget.go                   Widget interface, ScrollText, SleepOrCancel
+  clock.go                    Pixel clock widget
+  message.go                  Pixel message widget
+  alert.go                    Pixel alert widget
+  redis_alert.go              Redis-backed pixel alert
+  redis_message.go            Redis-backed pixel message
+  animation/                  Pixel animations (rain, random, bounce, sine, scanner, life)
+  segment/
+    clock.go                  Segment clock widget
+    message.go                Segment message widget
+    alert.go                  Segment alert widget
+    animation.go              Segment frame animation
+    redis_alert.go            Redis-backed segment alert
+    redis_message.go          Redis-backed segment message
 ```

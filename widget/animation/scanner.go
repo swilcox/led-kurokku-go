@@ -15,6 +15,8 @@ type Scanner struct{}
 func (s *Scanner) Name() string { return "scanner" }
 
 func (s *Scanner) Run(ctx context.Context, disp display.Display) error {
+	pd := disp.(display.PixelDisplay)
+
 	pos := 0
 	dir := 1
 
@@ -45,7 +47,7 @@ func (s *Scanner) Run(ctx context.Context, disp display.Display) error {
 			f[t3] = 0x11 // very sparse
 		}
 
-		disp.WriteFramebuffer(f.Bytes())
+		pd.WriteFramebuffer(f.Bytes())
 
 		pos += dir
 		if pos >= 31 {

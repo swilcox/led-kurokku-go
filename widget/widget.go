@@ -25,9 +25,9 @@ func SleepOrCancel(ctx context.Context, d time.Duration) error {
 	}
 }
 
-// ScrollText scrolls text across the display. If repeats <= 0, it scrolls
+// ScrollText scrolls text across the pixel display. If repeats <= 0, it scrolls
 // until the context is cancelled.
-func ScrollText(ctx context.Context, disp display.Display, text string,
+func ScrollText(ctx context.Context, disp display.PixelDisplay, text string,
 	scrollSpeed time.Duration, repeats int, sleepBetween time.Duration) error {
 
 	cols := font.RenderText(text)

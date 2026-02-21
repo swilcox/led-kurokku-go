@@ -38,8 +38,40 @@ type LocationConfig struct {
 	Timezone string  `json:"timezone"`
 }
 
+// DisplayType identifies the hardware display backend.
+type DisplayType string
+
+const (
+	DisplayTerminal      DisplayType = "terminal"
+	DisplayMAX7219       DisplayType = "max7219"
+	DisplayTM1637        DisplayType = "tm1637"
+	DisplayHT16K33       DisplayType = "ht16k33"
+	DisplayTerminalSeg7  DisplayType = "terminal_seg7"
+	DisplayTerminalSeg14 DisplayType = "terminal_seg14"
+)
+
+// DisplayConfig specifies which display hardware to use and its settings.
+type DisplayConfig struct {
+	Type    DisplayType `json:"type"`
+	ClkPin  string      `json:"clk_pin,omitempty"`  // TM1637 GPIO clock pin
+	DioPin  string      `json:"dio_pin,omitempty"`  // TM1637 GPIO data pin
+	I2CAddr uint16      `json:"i2c_addr,omitempty"` // HT16K33, default 0x70
+	I2CBus  string      `json:"i2c_bus,omitempty"`  // HT16K33 I2C bus
+	Layout  string      `json:"layout,omitempty"`   // "sequential" or "adafruit"
+}
+
+// IsSegment returns true if the display type is a segment display.
+func (d DisplayConfig) IsSegment() bool {
+	switch d.Type {
+	case DisplayTM1637, DisplayHT16K33, DisplayTerminalSeg7, DisplayTerminalSeg14:
+		return true
+	}
+	return false
+}
+
 // Config is the top-level configuration.
 type Config struct {
+	Display    DisplayConfig    `json:"display"`
 	Location   *LocationConfig  `json:"location,omitempty"`
 	Brightness BrightnessConfig `json:"brightness"`
 	Widgets    []WidgetConfig   `json:"widgets"`
@@ -63,9 +95,16 @@ type AlertConfig struct {
 	DeleteAfterDisplay bool    `json:"delete_after_display"`
 }
 
-// FrameConfig describes a single animation frame.
+// FrameConfig describes a single pixel animation frame.
 type FrameConfig struct {
 	Data     [32]byte `json:"data"`
+	Duration Duration `json:"duration,omitempty"`
+}
+
+// SegmentFrameConfig describes a single segment animation frame.
+type SegmentFrameConfig struct {
+	Data     []uint16 `json:"data"`
+	Colon    bool     `json:"colon,omitempty"`
 	Duration Duration `json:"duration,omitempty"`
 }
 
@@ -86,9 +125,10 @@ type WidgetConfig struct {
 	// Alert-specific
 	Alerts []AlertConfig `json:"alerts,omitempty"`
 	// Animation
-	AnimationType string        `json:"animation_type,omitempty"`
-	Frames        []FrameConfig `json:"frames,omitempty"`
-	FrameDuration Duration      `json:"frame_duration,omitempty"`
+	AnimationType string              `json:"animation_type,omitempty"`
+	Frames        []FrameConfig       `json:"frames,omitempty"`
+	SegmentFrames []SegmentFrameConfig `json:"segment_frames,omitempty"`
+	FrameDuration Duration            `json:"frame_duration,omitempty"`
 }
 
 // Parse parses JSON config data.
