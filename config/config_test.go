@@ -69,6 +69,44 @@ func TestParse_Valid(t *testing.T) {
 	}
 }
 
+func TestParse_WithLocation(t *testing.T) {
+	data := []byte(`{
+		"location": {"lat": 36.166, "lon": -86.784, "timezone": "America/Chicago"},
+		"brightness": {"high": 15, "low": 1, "use_location": true},
+		"widgets": []
+	}`)
+	cfg, err := config.Parse(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Location == nil {
+		t.Fatal("expected location to be set")
+	}
+	if cfg.Location.Lat != 36.166 {
+		t.Errorf("lat: got %v, want 36.166", cfg.Location.Lat)
+	}
+	if cfg.Location.Lon != -86.784 {
+		t.Errorf("lon: got %v, want -86.784", cfg.Location.Lon)
+	}
+	if cfg.Location.Timezone != "America/Chicago" {
+		t.Errorf("timezone: got %q, want \"America/Chicago\"", cfg.Location.Timezone)
+	}
+	if !cfg.Brightness.UseLocation {
+		t.Error("expected use_location to be true")
+	}
+}
+
+func TestParse_WithoutLocation(t *testing.T) {
+	data := []byte(`{"brightness": {"high": 15, "low": 1}, "widgets": []}`)
+	cfg, err := config.Parse(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Location != nil {
+		t.Error("expected location to be nil when not specified")
+	}
+}
+
 func TestParse_InvalidJSON(t *testing.T) {
 	_, err := config.Parse([]byte(`not json`))
 	if err == nil {

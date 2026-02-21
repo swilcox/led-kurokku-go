@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/nathan-osman/go-sunrise"
 	"github.com/swilcox/led-kurokku-go/config"
 	"github.com/swilcox/led-kurokku-go/display"
 	"github.com/swilcox/led-kurokku-go/internal/cronutil"
@@ -243,18 +244,46 @@ func (e *Engine) brightnessLoop(ctx context.Context) {
 
 func (e *Engine) updateBrightness() {
 	bc := e.cfg.Brightness
+	now := e.now()
+	if bc.UseLocation {
+		e.updateBrightnessFromLocation(now, bc)
+		return
+	}
+	e.updateBrightnessFromTimes(now, bc)
+}
+
+func (e *Engine) updateBrightnessFromLocation(now time.Time, bc config.BrightnessConfig) {
+	loc := e.cfg.Location
+	if loc == nil {
+		log.Print("brightness: use_location=true but no location configured, defaulting to high brightness")
+		e.disp.SetBrightness(bc.High)
+		return
+	}
+	tz, err := time.LoadLocation(loc.Timezone)
+	if err != nil {
+		log.Printf("brightness: invalid timezone %q: %v, defaulting to high brightness", loc.Timezone, err)
+		e.disp.SetBrightness(bc.High)
+		return
+	}
+	nowLocal := now.In(tz)
+	rise, set := sunrise.SunriseSunset(loc.Lat, loc.Lon, nowLocal.Year(), nowLocal.Month(), nowLocal.Day())
+	if now.After(rise) && now.Before(set) {
+		e.disp.SetBrightness(bc.High)
+	} else {
+		e.disp.SetBrightness(bc.Low)
+	}
+}
+
+func (e *Engine) updateBrightnessFromTimes(now time.Time, bc config.BrightnessConfig) {
 	dayStart, err1 := time.Parse("15:04", bc.DayStart)
 	dayEnd, err2 := time.Parse("15:04", bc.DayEnd)
 	if err1 != nil || err2 != nil {
 		e.disp.SetBrightness(bc.High)
 		return
 	}
-
-	now := e.now()
 	nowMinutes := now.Hour()*60 + now.Minute()
 	startMinutes := dayStart.Hour()*60 + dayStart.Minute()
 	endMinutes := dayEnd.Hour()*60 + dayEnd.Minute()
-
 	if nowMinutes >= startMinutes && nowMinutes < endMinutes {
 		e.disp.SetBrightness(bc.High)
 	} else {

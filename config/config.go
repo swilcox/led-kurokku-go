@@ -31,18 +31,27 @@ func (d *Duration) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// LocationConfig holds optional geographic location used for sunrise/sunset calculations.
+type LocationConfig struct {
+	Lat      float64 `json:"lat"`
+	Lon      float64 `json:"lon"`
+	Timezone string  `json:"timezone"`
+}
+
 // Config is the top-level configuration.
 type Config struct {
+	Location   *LocationConfig  `json:"location,omitempty"`
 	Brightness BrightnessConfig `json:"brightness"`
 	Widgets    []WidgetConfig   `json:"widgets"`
 }
 
 // BrightnessConfig controls time-of-day brightness.
 type BrightnessConfig struct {
-	High     byte   `json:"high"`
-	Low      byte   `json:"low"`
-	DayStart string `json:"day_start"`
-	DayEnd   string `json:"day_end"`
+	High        byte   `json:"high"`
+	Low         byte   `json:"low"`
+	DayStart    string `json:"day_start,omitempty"`
+	DayEnd      string `json:"day_end,omitempty"`
+	UseLocation bool   `json:"use_location,omitempty"`
 }
 
 // AlertConfig describes a single alert entry.

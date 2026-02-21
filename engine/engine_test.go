@@ -151,6 +151,83 @@ func TestEngine_New_NilRedis_DoesNotPanic(t *testing.T) {
 	}
 }
 
+func TestUpdateBrightness_UseLocation_Daytime(t *testing.T) {
+	spy := &testutil.SpyDisplay{}
+	cfg := &config.Config{
+		Location: &config.LocationConfig{
+			Lat: 36.166, Lon: -86.784, Timezone: "America/Chicago",
+		},
+		Brightness: config.BrightnessConfig{High: 15, Low: 1, UseLocation: true},
+	}
+	e := New(spy, cfg, nil)
+	e.nowFunc = func() time.Time {
+		// 3 PM UTC on summer solstice — well within daylight for Nashville
+		return time.Date(2024, 6, 21, 15, 0, 0, 0, time.UTC)
+	}
+	e.updateBrightness()
+	if len(spy.Brightness) == 0 {
+		t.Fatal("expected SetBrightness to be called")
+	}
+	if spy.Brightness[0] != 15 {
+		t.Errorf("expected high brightness (15) during daytime, got %d", spy.Brightness[0])
+	}
+}
+
+func TestUpdateBrightness_UseLocation_Nighttime(t *testing.T) {
+	spy := &testutil.SpyDisplay{}
+	cfg := &config.Config{
+		Location: &config.LocationConfig{
+			Lat: 36.166, Lon: -86.784, Timezone: "America/Chicago",
+		},
+		Brightness: config.BrightnessConfig{High: 15, Low: 1, UseLocation: true},
+	}
+	e := New(spy, cfg, nil)
+	e.nowFunc = func() time.Time {
+		// 5 AM UTC on summer solstice — before sunrise in Nashville (~10:30 UTC)
+		return time.Date(2024, 6, 21, 5, 0, 0, 0, time.UTC)
+	}
+	e.updateBrightness()
+	if len(spy.Brightness) == 0 {
+		t.Fatal("expected SetBrightness to be called")
+	}
+	if spy.Brightness[0] != 1 {
+		t.Errorf("expected low brightness (1) during nighttime, got %d", spy.Brightness[0])
+	}
+}
+
+func TestUpdateBrightness_UseLocation_MissingLocation_FallsBackToHigh(t *testing.T) {
+	spy := &testutil.SpyDisplay{}
+	cfg := &config.Config{
+		Brightness: config.BrightnessConfig{High: 15, Low: 1, UseLocation: true},
+	}
+	e := New(spy, cfg, nil)
+	e.updateBrightness()
+	if len(spy.Brightness) == 0 {
+		t.Fatal("expected SetBrightness to be called")
+	}
+	if spy.Brightness[0] != 15 {
+		t.Errorf("expected high brightness fallback when location is nil, got %d", spy.Brightness[0])
+	}
+}
+
+func TestUpdateBrightness_UseLocation_InvalidTimezone_FallsBackToHigh(t *testing.T) {
+	spy := &testutil.SpyDisplay{}
+	cfg := &config.Config{
+		Location: &config.LocationConfig{
+			Lat: 36.166, Lon: -86.784, Timezone: "Not/ATimezone",
+		},
+		Brightness: config.BrightnessConfig{High: 15, Low: 1, UseLocation: true},
+	}
+	e := New(spy, cfg, nil)
+	e.updateBrightness()
+	if len(spy.Brightness) == 0 {
+		t.Fatal("expected SetBrightness to be called")
+	}
+	if spy.Brightness[0] != 15 {
+		t.Errorf("expected high brightness fallback for invalid timezone, got %d", spy.Brightness[0])
+	}
+}
+
 func TestEngine_Run_SkipsWidgetWithNonMatchingCron(t *testing.T) {
 	spy := &testutil.SpyDisplay{}
 	// "0 12 * * *" matches only at 12:00; nowFunc returns 10:00 — should not match

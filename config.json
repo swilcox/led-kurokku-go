@@ -1,9 +1,13 @@
 {
+  "location": {
+    "lat": 36.166,
+    "lon": -86.784,
+    "timezone": "America/Chicago"
+  },
   "brightness": {
     "high": 12,
     "low": 2,
-    "day_start": "07:00",
-    "day_end": "22:00"
+    "use_location": true
   },
   "widgets": [
     {
