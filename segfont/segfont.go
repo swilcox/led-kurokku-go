@@ -27,34 +27,57 @@ var Seg7 = map[rune]byte{
 	'8': 0x7F, // a b c d e f g
 	'9': 0x6F, // a b c d f g
 	'A': 0x77, // a b c e f g
+	'a': 0x77, // → A
 	'b': 0x7C, // c d e f g
+	'B': 0x7C, // → b
 	'c': 0x58, // d e g
 	'C': 0x39, // a d e f
 	'd': 0x5E, // b c d e g
+	'D': 0x5E, // → d
 	'E': 0x79, // a d e f g
+	'e': 0x79, // → E
 	'F': 0x71, // a e f g
+	'f': 0x71, // → F
 	'G': 0x3D, // a c d e f
+	'g': 0x3D, // → G
 	'H': 0x76, // b c e f g
 	'h': 0x74, // c e f g
 	'I': 0x30, // e f
+	'i': 0x30, // → I
 	'J': 0x1E, // b c d e
+	'j': 0x1E, // → J
+	'K': 0x76, // → k
 	'k': 0x76, // b c e f g (same as H)
 	'L': 0x38, // d e f
+	'l': 0x38, // → L
 	'm': 0x55, // a c e g
+	'M': 0x55, // → m
 	'n': 0x54, // c e g
+	'N': 0x54, // → n
 	'o': 0x5C, // c d e g
 	'O': 0x3F, // a b c d e f
 	'P': 0x73, // a b e f g
+	'p': 0x73, // → P
 	'q': 0x67, // a b c f g
+	'Q': 0x67, // → q
 	'r': 0x50, // e g
+	'R': 0x50, // → r
 	'S': 0x6D, // a c d f g
+	's': 0x6D, // → S
 	't': 0x78, // d e f g
+	'T': 0x78, // → t
 	'U': 0x3E, // b c d e f
-	'v': 0x1C, // c d e
+	'u': 0x1C, // c d e
+	'v': 0x1C, // c d e (same as u)
+	'V': 0x1C, // → v
 	'w': 0x2A, // b d f (alternating segments)
+	'W': 0x2A, // → w
 	'x': 0x76, // b c e f g (same as H)
+	'X': 0x76, // → x
 	'y': 0x6E, // b c d f g
+	'Y': 0x6E, // → y
 	'z': 0x5B, // a b d e g (same as 2)
+	'Z': 0x5B, // → z
 	'-': 0x40, // g
 	'_': 0x08, // d
 	'*': 0x63, // a b f g (degree symbol)

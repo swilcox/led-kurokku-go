@@ -63,6 +63,25 @@ func TestSeg7_DegreeSymbol(t *testing.T) {
 	}
 }
 
+func TestSeg7_AllLowercaseLetters(t *testing.T) {
+	for r := 'a'; r <= 'z'; r++ {
+		if _, ok := Seg7[r]; !ok {
+			t.Errorf("Seg7 missing lowercase %q", r)
+		}
+	}
+}
+
+func TestSeg7_LowercaseFallbackMatchesUppercase(t *testing.T) {
+	// Letters that should use uppercase representation
+	fallbacks := []rune{'a', 'e', 'f', 'g', 'i', 'j', 'l', 'p', 's'}
+	for _, r := range fallbacks {
+		upper := r - 32 // 'a'-'A' = 32
+		if Seg7[r] != Seg7[upper] {
+			t.Errorf("Seg7[%q] = 0x%02X, want 0x%02X (same as %q)", r, Seg7[r], Seg7[upper], upper)
+		}
+	}
+}
+
 func TestSeg7_UnknownRune(t *testing.T) {
 	got := Seg7['@']
 	if got != 0 {
