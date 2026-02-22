@@ -107,17 +107,21 @@ var Font5x7 = map[rune]Glyph{
 // RenderText renders a string into a column-based framebuffer.
 // Each byte in the returned slice is one column (bit 0 = top row).
 // Characters are separated by 1 blank column.
+// ASCII glyphs are 5 columns wide; Hangul glyphs are 8 columns wide.
 func RenderText(s string) []byte {
+	runes := []rune(s)
 	var buf []byte
-	for i, ch := range s {
-		g, ok := Font5x7[ch]
-		if !ok {
-			g = Font5x7['?']
+	for i, ch := range runes {
+		if hg, ok := HangulGlyph(ch); ok {
+			buf = append(buf, hg[:]...)
+		} else {
+			g, ok := Font5x7[ch]
+			if !ok {
+				g = Font5x7['?']
+			}
+			buf = append(buf, g[:]...)
 		}
-		for _, col := range g {
-			buf = append(buf, col)
-		}
-		if i < len([]rune(s))-1 {
+		if i < len(runes)-1 {
 			buf = append(buf, 0x00) // 1-column gap
 		}
 	}

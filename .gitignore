@@ -1,6 +1,7 @@
 # Binaries
 kurokku
 kurokku-pi
+/genfont
 
 # Test coverage
 coverage.out
