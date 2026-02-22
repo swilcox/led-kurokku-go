@@ -27,18 +27,39 @@ func TestSeg7_Digits(t *testing.T) {
 }
 
 func TestSeg7_Letters(t *testing.T) {
-	// Spot-check a few common letters
-	if Seg7['A'] != 0x77 {
-		t.Errorf("Seg7['A'] = 0x%02X, want 0x77", Seg7['A'])
+	tests := []struct {
+		r    rune
+		want byte
+	}{
+		{'A', 0x77},
+		{'E', 0x79},
+		{'H', 0x76},
+		{'I', 0x30},
+		{'w', 0x2A},
+		{'m', 0x55},
+		{'n', 0x54},
+		{'q', 0x67},
+		{' ', 0x00},
+		{'-', 0x40},
 	}
-	if Seg7['E'] != 0x79 {
-		t.Errorf("Seg7['E'] = 0x%02X, want 0x79", Seg7['E'])
+	for _, tt := range tests {
+		got := Seg7[tt.r]
+		if got != tt.want {
+			t.Errorf("Seg7[%q] = 0x%02X, want 0x%02X", tt.r, got, tt.want)
+		}
 	}
-	if Seg7[' '] != 0x00 {
-		t.Errorf("Seg7[' '] = 0x%02X, want 0x00", Seg7[' '])
+}
+
+func TestSeg7_DegreeSymbol(t *testing.T) {
+	// Both '*' and '°' map to degree (0x63)
+	if Seg7['*'] != 0x63 {
+		t.Errorf("Seg7['*'] = 0x%02X, want 0x63", Seg7['*'])
 	}
-	if Seg7['-'] != 0x40 {
-		t.Errorf("Seg7['-'] = 0x%02X, want 0x40", Seg7['-'])
+	if Seg7['°'] != 0x63 {
+		t.Errorf("Seg7['°'] = 0x%02X, want 0x63", Seg7['°'])
+	}
+	if Seg7['*'] != Seg7['°'] {
+		t.Error("expected '*' and '°' to map to the same segment value")
 	}
 }
 
@@ -50,31 +71,63 @@ func TestSeg7_UnknownRune(t *testing.T) {
 }
 
 func TestSeg14_Digits(t *testing.T) {
-	// Verify all digits are non-zero
-	for _, r := range "0123456789" {
-		if Seg14[r] == 0 {
-			t.Errorf("Seg14[%q] = 0, expected non-zero", r)
+	tests := []struct {
+		r    rune
+		want uint16
+	}{
+		{'0', 0x003F},
+		{'1', 0x0006},
+		{'2', 0x00DB},
+		{'8', 0x00FF},
+	}
+	for _, tt := range tests {
+		got := Seg14[tt.r]
+		if got != tt.want {
+			t.Errorf("Seg14[%q] = 0x%04X, want 0x%04X", tt.r, got, tt.want)
 		}
 	}
 }
 
 func TestSeg14_Letters(t *testing.T) {
-	// Spot-check a few letters
-	if Seg14['A'] == 0 {
-		t.Error("Seg14['A'] should be non-zero")
+	tests := []struct {
+		r    rune
+		want uint16
+	}{
+		{'A', 0x00F7},
+		{'W', 0x2836},
+		{'I', 0x1209},
+		{'T', 0x1201},
 	}
-	if Seg14['Z'] == 0 {
-		t.Error("Seg14['Z'] should be non-zero")
+	for _, tt := range tests {
+		got := Seg14[tt.r]
+		if got != tt.want {
+			t.Errorf("Seg14[%q] = 0x%04X, want 0x%04X", tt.r, got, tt.want)
+		}
 	}
+}
+
+func TestSeg14_DegreeSymbol(t *testing.T) {
+	if Seg14['°'] != 0x00E3 {
+		t.Errorf("Seg14['°'] = 0x%04X, want 0x00E3", Seg14['°'])
+	}
+}
+
+func TestSeg14_Asterisk(t *testing.T) {
+	if Seg14['*'] != 0x2DC0 {
+		t.Errorf("Seg14['*'] = 0x%04X, want 0x2DC0", Seg14['*'])
+	}
+}
+
+func TestSeg14_Space(t *testing.T) {
 	if Seg14[' '] != 0 {
 		t.Errorf("Seg14[' '] = 0x%04X, want 0x0000", Seg14[' '])
 	}
 }
 
 func TestSeg14_UnknownRune(t *testing.T) {
-	got := Seg14['@']
+	got := Seg14['~']
 	if got != 0 {
-		t.Errorf("Seg14['@'] = 0x%04X, want 0x0000 for unknown rune", got)
+		t.Errorf("Seg14['~'] = 0x%04X, want 0x0000 for unknown rune", got)
 	}
 }
 
@@ -83,7 +136,6 @@ func TestEnc7(t *testing.T) {
 	if got != 0x3F {
 		t.Errorf("Enc7('0') = 0x%04X, want 0x003F", got)
 	}
-	// Unknown rune returns 0
 	if Enc7('~') != 0 {
 		t.Errorf("Enc7('~') = 0x%04X, want 0x0000", Enc7('~'))
 	}
@@ -91,8 +143,8 @@ func TestEnc7(t *testing.T) {
 
 func TestEnc14(t *testing.T) {
 	got := Enc14('A')
-	if got == 0 {
-		t.Error("Enc14('A') should be non-zero")
+	if got != 0x00F7 {
+		t.Errorf("Enc14('A') = 0x%04X, want 0x00F7", got)
 	}
 	if Enc14('~') != 0 {
 		t.Errorf("Enc14('~') = 0x%04X, want 0x0000", Enc14('~'))
@@ -109,6 +161,16 @@ func TestEncodeText(t *testing.T) {
 	}
 	if result[1] != uint16(Seg7['2']) {
 		t.Errorf("result[1] = 0x%04X, want 0x%04X", result[1], Seg7['2'])
+	}
+}
+
+func TestEncodeText_Degree(t *testing.T) {
+	result := EncodeText(Enc7, "72°F")
+	if len(result) != 4 {
+		t.Fatalf("length = %d, want 4", len(result))
+	}
+	if result[2] != 0x63 {
+		t.Errorf("degree segment = 0x%04X, want 0x0063", result[2])
 	}
 }
 

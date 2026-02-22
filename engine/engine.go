@@ -271,9 +271,16 @@ func (e *Engine) buildWidgets() ([]widget.Widget, []time.Duration, []string) {
 
 		case "animation":
 			if isSeg {
-				w = &segment.FrameAnimation{
-					Frames:        wc.SegmentFrames,
-					FrameDuration: wc.FrameDuration.Unwrap(),
+				if wc.AnimationType == "frames" || wc.AnimationType == "" {
+					w = &segment.FrameAnimation{
+						Frames:        wc.SegmentFrames,
+						FrameDuration: wc.FrameDuration.Unwrap(),
+					}
+				} else if factory, ok := segment.Registry[wc.AnimationType]; ok {
+					w = factory()
+				} else {
+					log.Printf("unknown segment animation type: %s", wc.AnimationType)
+					continue
 				}
 			} else {
 				if wc.AnimationType == "frames" || wc.AnimationType == "" {

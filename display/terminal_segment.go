@@ -129,91 +129,106 @@ func (t *TerminalSegment) render7(segments []uint16, colon bool) {
 
 // render14 draws 14-segment digits as 7-line ASCII art.
 //
-// bit  0 = a1    bit  1 = a2
-// bit  2 = b     bit  3 = c
-// bit  4 = d1    bit  5 = d2
-// bit  6 = e     bit  7 = f
-// bit  8 = g1    bit  9 = g2
-// bit 10 = h     bit 11 = j
-// bit 12 = k     bit 13 = l
-// bit 14 = m     bit 15 = n
+// Bit layout matching Python HT16K33 driver:
+// bit  0 = A   (top horizontal)
+// bit  1 = B   (top right vertical)
+// bit  2 = C   (bottom right vertical)
+// bit  3 = D   (bottom horizontal)
+// bit  4 = E   (bottom left vertical)
+// bit  5 = F   (top left vertical)
+// bit  6 = G1  (middle left horizontal)
+// bit  7 = G2  (middle right horizontal)
+// bit  8 = H   (top left diagonal)
+// bit  9 = I   (top center vertical)
+// bit 10 = J   (top right diagonal)
+// bit 11 = K   (bottom left diagonal)
+// bit 12 = L   (bottom center vertical)
+// bit 13 = M   (bottom right diagonal)
 //
-//   __ __
-//  |\  | /|
-//  | \ |/ |
-//   -- --
-//  | /|\ |
-//  |/ | \|
-//   -- --
+//    ___
+//   |\|/|
+//    - -
+//   |/|\|
+//    ---
 func (t *TerminalSegment) render14(segments []uint16, colon bool) {
 	var lines [7]string
 
 	for i, seg := range segments {
-		a1 := seg&0x0001 != 0
-		a2 := seg&0x0002 != 0
-		b := seg&0x0004 != 0
-		c := seg&0x0008 != 0
-		d1 := seg&0x0010 != 0
-		d2 := seg&0x0020 != 0
-		e := seg&0x0040 != 0
-		f := seg&0x0080 != 0
-		g1 := seg&0x0100 != 0
-		g2 := seg&0x0200 != 0
-		h := seg&0x0400 != 0
-		j := seg&0x0800 != 0
-		k := seg&0x1000 != 0
-		l := seg&0x2000 != 0
-		m := seg&0x4000 != 0
-		n := seg&0x8000 != 0
+		a := seg&0x0001 != 0
+		b := seg&0x0002 != 0
+		c := seg&0x0004 != 0
+		d := seg&0x0008 != 0
+		e := seg&0x0010 != 0
+		f := seg&0x0020 != 0
+		g1 := seg&0x0040 != 0
+		g2 := seg&0x0080 != 0
+		h := seg&0x0100 != 0
+		iSeg := seg&0x0200 != 0
+		j := seg&0x0400 != 0
+		k := seg&0x0800 != 0
+		l := seg&0x1000 != 0
+		m := seg&0x2000 != 0
 
 		// Top bar
-		lines[0] += " " + bar(a1) + " " + bar(a2) + " "
+		if a {
+			lines[0] += " _____ "
+		} else {
+			lines[0] += "       "
+		}
 
 		// Upper half - top row
 		fCh := ch(f, '|')
 		hCh := ch14(h, '\\')
-		jCh := ch(j, '|')
-		kCh := ch14(k, '/')
+		iCh := ch(iSeg, '|')
+		jCh := ch14(j, '/')
 		bCh := ch(b, '|')
-		lines[1] += fCh + hCh + " " + jCh + " " + kCh + bCh
+		lines[1] += fCh + hCh + "  " + iCh + "  " + jCh + bCh
 
-		// Upper half - bottom row (just before middle)
-		lines[2] += fCh + " " + hCh + jCh + kCh + " " + bCh
+		// Upper half - bottom row
+		lines[2] += fCh + " " + hCh + " " + iCh + " " + jCh + " " + bCh
 
 		// Middle bar
-		lines[3] += " " + bar(g1) + " " + bar(g2) + " "
+		g1Ch := "  "
+		g2Ch := "  "
+		if g1 {
+			g1Ch = "__"
+		}
+		if g2 {
+			g2Ch = "__"
+		}
+		lines[3] += " " + g1Ch + " " + g2Ch + " "
 
-		// Lower half - top row (just after middle)
+		// Lower half - top row
 		eCh := ch(e, '|')
 		cCh := ch(c, '|')
-		nCh := ch14(n, '/')
-		mCh := ch(m, '|')
-		lCh := ch14(l, '\\')
-		lines[4] += eCh + " " + nCh + mCh + lCh + " " + cCh
+		kCh := ch14(k, '/')
+		lCh := ch(l, '|')
+		mCh := ch14(m, '\\')
+		lines[4] += eCh + " " + kCh + " " + lCh + " " + mCh + " " + cCh
 
 		// Lower half - bottom row
-		lines[5] += eCh + nCh + " " + mCh + " " + lCh + cCh
+		lines[5] += eCh + kCh + "  " + lCh + "  " + mCh + cCh
 
 		// Bottom bar
-		lines[6] += " " + bar(d1) + " " + bar(d2) + " "
+		if d {
+			lines[6] += " _____ "
+		} else {
+			lines[6] += "       "
+		}
 
 		// Colon after digit 1
 		if i == 1 && colon {
 			lines[0] += " "
 			lines[1] += " "
-			lines[2] += "o"
-			lines[3] += " "
-			lines[4] += "o"
-			lines[5] += " "
+			lines[2] += " "
+			lines[3] += "o"
+			lines[4] += " "
+			lines[5] += "o"
 			lines[6] += " "
 		} else if i < len(segments)-1 {
-			lines[0] += " "
-			lines[1] += " "
-			lines[2] += " "
-			lines[3] += " "
-			lines[4] += " "
-			lines[5] += " "
-			lines[6] += " "
+			for k := range lines {
+				lines[k] += " "
+			}
 		}
 	}
 
@@ -237,11 +252,4 @@ func ch14(on bool, c byte) string {
 		return string(c)
 	}
 	return " "
-}
-
-func bar(on bool) string {
-	if on {
-		return "__"
-	}
-	return "  "
 }
