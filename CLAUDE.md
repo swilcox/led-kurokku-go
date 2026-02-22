@@ -27,7 +27,7 @@ Display types: `terminal`, `max7219`, `tm1637`, `ht16k33`, `terminal_seg7`, `ter
 
 ### Display Interface Hierarchy
 
-- **display.Display** — base interface: `Init`, `Close`, `Clear`, `SetBrightness`
+- **display.Display** — base interface: `Init`, `Close`, `Clear`, `SetBrightness` (always 0-15; backends map to native range)
 - **display.PixelDisplay** — extends Display: `WriteFramebuffer`, `Width`, `Height`
 - **display.SegmentDisplay** — extends Display: `WriteSegments([]uint16, colon bool)`, `DisplayLength`
 

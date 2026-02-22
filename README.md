@@ -104,8 +104,8 @@ The `display` block selects the hardware backend and its settings:
 | Field      | Used By  | Description |
 |------------|----------|-------------|
 | `type`     | All      | `terminal`, `max7219`, `tm1637`, `ht16k33`, `terminal_seg7`, `terminal_seg14` |
-| `clk_pin`  | TM1637   | GPIO clock pin name (e.g. `"GPIO23"`) |
-| `dio_pin`  | TM1637   | GPIO data pin name (e.g. `"GPIO24"`) |
+| `clk_pin`  | TM1637   | GPIO clock pin (default `"GPIO23"`) |
+| `dio_pin`  | TM1637   | GPIO data pin (default `"GPIO24"`) |
 | `i2c_addr` | HT16K33  | I2C address (default `0x70` / `112`) |
 | `i2c_bus`  | HT16K33  | I2C bus name (empty for default) |
 | `layout`   | HT16K33  | `"sequential"` (default) or `"adafruit"` |
@@ -224,6 +224,8 @@ Any widget can include a `cron` field with a standard cron expression. The widge
 ```
 
 ### Brightness
+
+Brightness values are always specified in the **0-15 range**, regardless of display type. Displays with fewer hardware levels (e.g. TM1637 with 8 levels) map automatically.
 
 Two modes:
 

@@ -151,7 +151,7 @@ ASCII art rendering of segment displays for development. Supports both 7-segment
 Drives a 4-digit 7-segment display via GPIO bit-bang protocol.
 
 - **Protocol:** Custom two-wire serial (not I2C), bit-banged via GPIO
-- **Signals:** CLK (clock) + DIO (data)
+- **Signals:** CLK (clock, default GPIO23) + DIO (data, default GPIO24)
 - **Data format:** Low byte of each `uint16` segment value
 - **Colon:** Bit 7 OR'd onto digit 1's byte
 - **Brightness:** 8 levels (0-7), mapped from the 0-15 range by right-shifting

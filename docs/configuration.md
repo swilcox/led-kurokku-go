@@ -47,8 +47,8 @@ graph TD
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `type` | string | No | Display backend. Default: `terminal` (or CLI `-display` flag) |
-| `clk_pin` | string | TM1637 only | GPIO clock pin name (e.g. `"GPIO23"`) |
-| `dio_pin` | string | TM1637 only | GPIO data pin name (e.g. `"GPIO24"`) |
+| `clk_pin` | string | No | TM1637 GPIO clock pin. Default: `"GPIO23"` |
+| `dio_pin` | string | No | TM1637 GPIO data pin. Default: `"GPIO24"` |
 | `i2c_addr` | int | No | HT16K33 I2C address. Default: `0x70` (112) |
 | `i2c_bus` | string | No | HT16K33 I2C bus name. Empty for default |
 | `layout` | string | No | HT16K33 digit layout: `"sequential"` (default) or `"adafruit"` |
@@ -77,6 +77,8 @@ The display type determines which widget variants the engine constructs (pixel o
 Used by `use_location` brightness mode to compute sunrise/sunset.
 
 ## Brightness
+
+Brightness values are always specified in the **0-15 range**, regardless of display type. The driver maps to the hardware's native range automatically (e.g. TM1637 has 8 levels internally, so 0-15 is mapped to 0-7 via right-shift).
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|

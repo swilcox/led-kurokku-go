@@ -25,7 +25,14 @@ type TM1637 struct {
 }
 
 // NewTM1637 creates a new TM1637 display using the given GPIO pin names.
+// Defaults to GPIO23 (CLK) and GPIO24 (DIO) if not specified.
 func NewTM1637(clkPin, dioPin string) *TM1637 {
+	if clkPin == "" {
+		clkPin = "GPIO23"
+	}
+	if dioPin == "" {
+		dioPin = "GPIO24"
+	}
 	return &TM1637{clkName: clkPin, dioName: dioPin, bright: 7}
 }
 

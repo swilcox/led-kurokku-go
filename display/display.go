@@ -5,7 +5,7 @@ type Display interface {
 	Init() error
 	Close() error
 	Clear()
-	SetBrightness(level byte) // 0-15 for MAX7219, mapped for others
+	SetBrightness(level byte) // 0-15; backends map to native range (e.g. TM1637: 0-7)
 }
 
 // PixelDisplay is for pixel matrix displays (MAX7219, terminal).
