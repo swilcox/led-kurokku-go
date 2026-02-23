@@ -142,7 +142,7 @@ Widgets are processed in array order. Each has a `type` and shared fields, plus 
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `animation_type` | string | `"frames"` | Pixel only: `frames`, `rain`, `random`, `bounce`, `sine`, `scanner`, `life` |
+| `animation_type` | string | `"frames"` | Pixel: `frames`, `rain`, `static`, `bounce`, `sine`, `scanner`, `life`. Segment: `rain`, `static`, `scanner`, `race`. |
 | `frames` | array | — | Pixel frame data (32-byte arrays) |
 | `segment_frames` | array | — | Segment frame data |
 | `frame_duration` | duration | `"100ms"` | Default duration per frame |

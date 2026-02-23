@@ -229,7 +229,7 @@ flowchart TD
 | Name | Description | Frame Rate |
 |------|-------------|------------|
 | `rain` | Raindrops falling with 3-pixel trails | 80ms |
-| `random` | TV-static random noise | 50ms |
+| `static` | TV-static random noise | 50ms |
 | `bounce` | Pixel bouncing with 2-pixel trail | 50ms |
 | `sine` | Scrolling sine wave (one pixel per column) | 50ms |
 | `scanner` | KITT-style sweeping column with fading trail | 40ms |
@@ -237,7 +237,16 @@ flowchart TD
 
 ### Segment Animations
 
-Frame-based only. Each frame specifies segment data (`[]uint16`), colon state, and optional duration.
+**Procedural:** Built-in animations registered in `segment.Registry`:
+
+| Name | Description | Frame Rate |
+|------|-------------|------------|
+| `rain` | Segments light up and "fall" through each digit | 120ms |
+| `static` | Random segment noise (TV static) | 80ms |
+| `scanner` | Single vertical sweeping back and forth (8 positions for 7-seg, 20 for 14-seg) | 100ms / 60ms |
+| `race` | Two dots chasing each other around the segment perimeter | 80ms |
+
+**Frame-based:** Each frame specifies segment data (`[]uint16`), colon state, and optional duration.
 
 ```json
 {
@@ -251,7 +260,7 @@ Frame-based only. Each frame specifies segment data (`[]uint16`), colon state, a
 }
 ```
 
-### Configuration (Pixel)
+### Configuration
 
 ```json
 {

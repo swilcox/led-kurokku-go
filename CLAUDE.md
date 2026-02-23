@@ -40,7 +40,7 @@ Widgets accept `display.Display` in `Run()` and type-assert to the sub-interface
 - **engine/** — Widget cycling loop. Branches on `cfg.Display.IsSegment()` to build pixel or segment widgets. Supports Redis alert interrupts via keyspace notifications.
 - **widget/** — `Widget` interface (`Name()`, `Run(ctx, disp)`). Pixel widgets: clock, message, alert, animation. Redis wrappers delegate to inner widgets.
 - **widget/segment/** — Segment display widgets: clock, message, alert, animation, redis_alert, redis_message. Mirror pixel widget behavior adapted for character-based displays.
-- **widget/animation/** — Procedural pixel animations (rain, random, bounce, sine, scanner, life) and frame-based animation.
+- **widget/animation/** — Procedural pixel animations (rain, static, bounce, sine, scanner, life) and frame-based animation.
 - **segfont/** — 7-segment (`Seg7`) and 14-segment (`Seg14`) character maps. `Encoder` type with `Enc7`/`Enc14` implementations.
 - **redis/** — Optional Redis client. Alerts via `kurokku:alert:*`, messages via `dynamic_source` key. Keyspace notifications for live alert interrupts.
 - **framebuf/** — 32x8 column-based framebuffer (pixel displays only)

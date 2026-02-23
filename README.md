@@ -207,7 +207,7 @@ The `display` block selects the hardware backend and its settings:
 | `clock`     | Yes | Yes | Time display with blinking colon. Set `format_24h` for 24-hour format. 12h PM uses double-blink pattern. |
 | `message`   | Yes | Yes | Static or scrolling text. Supports `dynamic_source` for Redis-backed text. Pixel: 50ms scroll speed. Segment: 300ms per character. |
 | `alert`     | Yes | Yes | Displays prioritized alerts. With Redis, fetches from `kurokku:alert:*` keys; without, uses the `alerts` array. |
-| `animation` | Yes | Yes | Pixel: procedural (`rain`, `random`, `bounce`, `sine`, `scanner`, `life`) or custom `frames`. Segment: custom `segment_frames`. |
+| `animation` | Yes | Yes | Pixel: procedural (`rain`, `static`, `bounce`, `sine`, `scanner`, `life`) or custom `frames`. Segment: procedural (`rain`, `static`, `scanner`, `race`) or custom `segment_frames`. |
 
 ### Cron Scheduling
 
@@ -368,7 +368,7 @@ widget/
   alert.go                    Pixel alert widget
   redis_alert.go              Redis-backed pixel alert
   redis_message.go            Redis-backed pixel message
-  animation/                  Pixel animations (rain, random, bounce, sine, scanner, life)
+  animation/                  Pixel animations (rain, static, bounce, sine, scanner, life)
   segment/
     clock.go                  Segment clock widget
     message.go                Segment message widget
