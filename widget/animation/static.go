@@ -9,12 +9,12 @@ import (
 	"github.com/swilcox/led-kurokku-go/framebuf"
 )
 
-// Random displays TV-static random pixel noise.
-type Random struct{}
+// Static displays TV-static random pixel noise.
+type Static struct{}
 
-func (r *Random) Name() string { return "random" }
+func (r *Static) Name() string { return "static" }
 
-func (r *Random) Run(ctx context.Context, disp display.Display) error {
+func (r *Static) Run(ctx context.Context, disp display.Display) error {
 	pd := disp.(display.PixelDisplay)
 
 	ticker := time.NewTicker(50 * time.Millisecond)

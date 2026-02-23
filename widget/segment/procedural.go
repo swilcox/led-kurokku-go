@@ -12,7 +12,7 @@ import (
 // Registry maps segment animation type names to constructors.
 var Registry = map[string]func() widget.Widget{
 	"rain":    func() widget.Widget { return &Rain{} },
-	"random":  func() widget.Widget { return &Random{} },
+	"static":  func() widget.Widget { return &Static{} },
 	"scanner": func() widget.Widget { return &Scanner{} },
 	"race":    func() widget.Widget { return &Race{} },
 }
@@ -159,12 +159,12 @@ func (r *Rain14) Run(ctx context.Context, disp display.Display) error {
 	}
 }
 
-// Random displays random segments lighting up across all digits.
-type Random struct{}
+// Static displays random segments lighting up across all digits (TV static).
+type Static struct{}
 
-func (r *Random) Name() string { return "segment-random" }
+func (r *Static) Name() string { return "segment-static" }
 
-func (r *Random) Run(ctx context.Context, disp display.Display) error {
+func (r *Static) Run(ctx context.Context, disp display.Display) error {
 	sd := disp.(display.SegmentDisplay)
 	n := sd.DisplayLength()
 
@@ -416,12 +416,12 @@ func runRace(ctx context.Context, sd display.SegmentDisplay, n int, track []trac
 	}
 }
 
-// Random14 displays random 14-segment patterns across all digits.
-type Random14 struct{}
+// Static14 displays random 14-segment patterns across all digits (TV static).
+type Static14 struct{}
 
-func (r *Random14) Name() string { return "segment-random14" }
+func (r *Static14) Name() string { return "segment-static14" }
 
-func (r *Random14) Run(ctx context.Context, disp display.Display) error {
+func (r *Static14) Run(ctx context.Context, disp display.Display) error {
 	sd := disp.(display.SegmentDisplay)
 	n := sd.DisplayLength()
 

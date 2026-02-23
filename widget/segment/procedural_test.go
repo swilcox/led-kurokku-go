@@ -29,13 +29,13 @@ func TestSegmentRain14_WritesSegments(t *testing.T) {
 	}
 }
 
-func TestSegmentRandom_WritesSegments(t *testing.T) {
+func TestSegmentStatic_WritesSegments(t *testing.T) {
 	spy := &testutil.SpySegmentDisplay{}
 	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
 	defer cancel()
-	(&segment.Random{}).Run(ctx, spy)
+	(&segment.Static{}).Run(ctx, spy)
 	if len(spy.Calls) == 0 {
-		t.Error("expected segment writes from Random animation")
+		t.Error("expected segment writes from Static animation")
 	}
 	// Each call should have 4 segments
 	for i, call := range spy.Calls {
@@ -46,21 +46,21 @@ func TestSegmentRandom_WritesSegments(t *testing.T) {
 	}
 }
 
-func TestSegmentRandom14_WritesSegments(t *testing.T) {
+func TestSegmentStatic14_WritesSegments(t *testing.T) {
 	spy := &testutil.SpySegmentDisplay{}
 	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
 	defer cancel()
-	(&segment.Random14{}).Run(ctx, spy)
+	(&segment.Static14{}).Run(ctx, spy)
 	if len(spy.Calls) == 0 {
-		t.Error("expected segment writes from Random14 animation")
+		t.Error("expected segment writes from Static14 animation")
 	}
 }
 
-func TestSegmentRandom_SegmentsVary(t *testing.T) {
+func TestSegmentStatic_SegmentsVary(t *testing.T) {
 	spy := &testutil.SpySegmentDisplay{}
 	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
 	defer cancel()
-	(&segment.Random{}).Run(ctx, spy)
+	(&segment.Static{}).Run(ctx, spy)
 	if len(spy.Calls) < 2 {
 		t.Skip("not enough calls to check variation")
 	}
@@ -77,7 +77,7 @@ func TestSegmentRandom_SegmentsVary(t *testing.T) {
 		}
 	}
 	if allSame {
-		t.Error("expected random segments to vary between calls")
+		t.Error("expected static segments to vary between calls")
 	}
 }
 
@@ -150,7 +150,7 @@ func TestSegmentRace14_WritesSegments(t *testing.T) {
 }
 
 func TestSegmentRegistry(t *testing.T) {
-	for _, name := range []string{"rain", "random", "scanner", "race"} {
+	for _, name := range []string{"rain", "static", "scanner", "race"} {
 		factory, ok := segment.Registry[name]
 		if !ok {
 			t.Errorf("Registry missing %q", name)
