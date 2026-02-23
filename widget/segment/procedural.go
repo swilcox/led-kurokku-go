@@ -187,7 +187,9 @@ func (r *Random) Run(ctx context.Context, disp display.Display) error {
 	}
 }
 
-// Scanner sweeps a vertical bar back and forth across the digits.
+// Scanner sweeps one vertical at a time back and forth across the digits.
+// For a 4-digit 7-segment display this gives 8 distinct positions:
+// digit 0 left, digit 0 right, digit 1 left, ..., digit 3 right.
 type Scanner struct{}
 
 func (s *Scanner) Name() string { return "segment-scanner" }
@@ -199,19 +201,31 @@ func (s *Scanner) Run(ctx context.Context, disp display.Display) error {
 		return nil
 	}
 
-	// 7-segment vertical bar: b + c + e + f = all four vertical segments
-	bar := uint16(0x36)
+	// 7-segment verticals: left side (f+e), right side (b+c)
+	leftBar := uint16(0x30)  // f=bit5, e=bit4
+	rightBar := uint16(0x06) // b=bit1, c=bit2
 
-	// Build bounce sequence: 0,1,2,3,2,1 for n=4
-	seq := make([]int, 0, 2*n-2)
+	// Build position list: each digit has left then right vertical
+	type vpos struct {
+		digit   int
+		pattern uint16
+	}
+	positions := make([]vpos, 0, n*2)
 	for i := 0; i < n; i++ {
+		positions = append(positions, vpos{i, leftBar}, vpos{i, rightBar})
+	}
+
+	// Build bounce sequence over positions
+	total := len(positions)
+	seq := make([]int, 0, 2*total-2)
+	for i := 0; i < total; i++ {
 		seq = append(seq, i)
 	}
-	for i := n - 2; i > 0; i-- {
+	for i := total - 2; i > 0; i-- {
 		seq = append(seq, i)
 	}
 
-	ticker := time.NewTicker(150 * time.Millisecond)
+	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 
 	pos := 0
@@ -222,15 +236,18 @@ func (s *Scanner) Run(ctx context.Context, disp display.Display) error {
 		case <-ticker.C:
 		}
 
+		v := positions[seq[pos]]
 		segments := make([]uint16, n)
-		segments[seq[pos]] = bar
+		segments[v.digit] = v.pattern
 		sd.WriteSegments(segments, false)
 
 		pos = (pos + 1) % len(seq)
 	}
 }
 
-// Scanner14 sweeps a vertical bar using 14-segment patterns (includes center verticals).
+// Scanner14 sweeps one vertical at a time back and forth across the digits.
+// For a 4-digit 14-segment display this gives 20 distinct positions:
+// each digit has 5 verticals (F+E, H+K, I+L, J+M, B+C) left to right.
 type Scanner14 struct{}
 
 func (s *Scanner14) Name() string { return "segment-scanner14" }
@@ -242,19 +259,35 @@ func (s *Scanner14) Run(ctx context.Context, disp display.Display) error {
 		return nil
 	}
 
-	// 14-segment vertical bar: B + C + E + F + J + M (outer + center verticals)
-	// B=bit1, C=bit2, E=bit4, F=bit5, J=bit10, M=bit13
-	bar := uint16(0x2436)
+	// 14-segment verticals left to right within each digit:
+	// F+E  (outer left):   F=bit5, E=bit4   = 0x0030
+	// H+K  (inner left):   H=bit8, K=bit11  = 0x0900
+	// I+L  (center):       I=bit9, L=bit12  = 0x1200
+	// J+M  (inner right):  J=bit10, M=bit13 = 0x2400
+	// B+C  (outer right):  B=bit1, C=bit2   = 0x0006
+	bars := []uint16{0x0030, 0x0900, 0x1200, 0x2400, 0x0006}
 
-	seq := make([]int, 0, 2*n-2)
+	type vpos struct {
+		digit   int
+		pattern uint16
+	}
+	positions := make([]vpos, 0, n*len(bars))
 	for i := 0; i < n; i++ {
+		for _, b := range bars {
+			positions = append(positions, vpos{i, b})
+		}
+	}
+
+	total := len(positions)
+	seq := make([]int, 0, 2*total-2)
+	for i := 0; i < total; i++ {
 		seq = append(seq, i)
 	}
-	for i := n - 2; i > 0; i-- {
+	for i := total - 2; i > 0; i-- {
 		seq = append(seq, i)
 	}
 
-	ticker := time.NewTicker(150 * time.Millisecond)
+	ticker := time.NewTicker(60 * time.Millisecond)
 	defer ticker.Stop()
 
 	pos := 0
@@ -265,8 +298,9 @@ func (s *Scanner14) Run(ctx context.Context, disp display.Display) error {
 		case <-ticker.C:
 		}
 
+		v := positions[seq[pos]]
 		segments := make([]uint16, n)
-		segments[seq[pos]] = bar
+		segments[v.digit] = v.pattern
 		sd.WriteSegments(segments, false)
 
 		pos = (pos + 1) % len(seq)
