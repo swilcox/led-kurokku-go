@@ -1,0 +1,31 @@
+services:
+  valkey:
+    image: valkey/valkey:8
+    ports:
+      - "6379:6379"
+    volumes:
+      - valkey-data:/data
+
+  kurokku:
+    build: .
+    privileged: true
+    user: root
+    cap_add:
+      - SYS_RAWIO
+    devices:
+      - "/dev/gpiomem:/dev/gpiomem"
+      - "/dev/mem:/dev/mem"
+      - "/dev/spidev0.0:/dev/spidev0.0"
+      - "/dev/i2c-1:/dev/i2c-1"
+    depends_on:
+      - valkey
+    environment:
+      - REDIS_HOST=valkey
+      - REDIS_PORT=6379
+    volumes:
+      - ./config.json:/etc/kurokku/config.json:ro
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+
+volumes:
+  valkey-data:
