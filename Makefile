@@ -1,4 +1,4 @@
-.PHONY: build build-pi test cover cover-html clean help
+.PHONY: build build-pi build-admin build-admin-pi test cover cover-html clean help
 
 ## build: compile binary for current platform
 build:
@@ -7,6 +7,14 @@ build:
 ## build-pi: cross-compile for Raspberry Pi (linux/arm64)
 build-pi:
 	GOOS=linux GOARCH=arm64 go build -o kurokku-pi ./cmd/kurokku
+
+## build-admin: compile admin binary for current platform
+build-admin:
+	go build -o kurokku-admin ./cmd/kurokku-admin
+
+## build-admin-pi: cross-compile admin for Raspberry Pi (linux/arm64)
+build-admin-pi:
+	GOOS=linux GOARCH=arm64 go build -o kurokku-admin-pi ./cmd/kurokku-admin
 
 ## test: run all unit tests
 test:
@@ -23,7 +31,7 @@ cover-html:
 
 ## clean: remove build artifacts and coverage output
 clean:
-	rm -f kurokku kurokku-pi coverage.out
+	rm -f kurokku kurokku-pi kurokku-admin kurokku-admin-pi coverage.out
 
 ## help: show this help message
 help:

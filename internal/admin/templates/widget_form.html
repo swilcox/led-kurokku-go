@@ -1,0 +1,82 @@
+{{define "widget_form"}}
+<div class="widget-card" id="widget-{{.Index}}">
+  <div class="widget-header">
+    <h3>Widget #{{inc .Index}}</h3>
+    <button type="button" class="btn btn-sm btn-danger"
+      hx-delete="/instances/_/config/widgets/{{.Index}}"
+      hx-target="#widget-{{.Index}}"
+      hx-swap="outerHTML">Remove</button>
+  </div>
+  <div class="form-row">
+    <div class="form-group">
+      <label>Type</label>
+      <select name="widgets[{{.Index}}].type">
+        <option value="clock" {{if eq .Widget.Type "clock"}}selected{{end}}>Clock</option>
+        <option value="message" {{if eq .Widget.Type "message"}}selected{{end}}>Message</option>
+        <option value="alert" {{if eq .Widget.Type "alert"}}selected{{end}}>Alert</option>
+        <option value="animation" {{if eq .Widget.Type "animation"}}selected{{end}}>Animation</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Duration</label>
+      <input type="text" name="widgets[{{.Index}}].duration" value="{{.Widget.Duration.Unwrap}}" placeholder="10s">
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group">
+      <div class="checkbox-group">
+        <input type="checkbox" name="widgets[{{.Index}}].enabled" {{if .Widget.Enabled}}checked{{end}}>
+        <label>Enabled</label>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Cron (optional)</label>
+      <input type="text" name="widgets[{{.Index}}].cron" value="{{.Widget.Cron}}" placeholder="*/15 * * * *">
+    </div>
+  </div>
+  <div class="form-group">
+    <label>Text (message/alert)</label>
+    <input type="text" name="widgets[{{.Index}}].text" value="{{.Widget.Text}}">
+  </div>
+  <div class="form-row">
+    <div class="form-group">
+      <label>Dynamic Source (Redis key)</label>
+      <input type="text" name="widgets[{{.Index}}].dynamic_source" value="{{.Widget.DynamicSource}}">
+    </div>
+    <div class="form-group">
+      <label>Scroll Speed</label>
+      <input type="text" name="widgets[{{.Index}}].scroll_speed" value="{{if .Widget.ScrollSpeed.Unwrap}}{{.Widget.ScrollSpeed.Unwrap}}{{end}}" placeholder="50ms">
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group">
+      <div class="checkbox-group">
+        <input type="checkbox" name="widgets[{{.Index}}].format_24h" {{if and .Widget.Format24h (derefBool .Widget.Format24h)}}checked{{end}}>
+        <label>24h Format (clock)</label>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Animation Type</label>
+      <select name="widgets[{{.Index}}].animation_type">
+        <option value="" {{if eq .Widget.AnimationType ""}}selected{{end}}>None</option>
+        <option value="rain" {{if eq .Widget.AnimationType "rain"}}selected{{end}}>Rain</option>
+        <option value="static" {{if eq .Widget.AnimationType "static"}}selected{{end}}>Static</option>
+        <option value="bounce" {{if eq .Widget.AnimationType "bounce"}}selected{{end}}>Bounce</option>
+        <option value="sine" {{if eq .Widget.AnimationType "sine"}}selected{{end}}>Sine</option>
+        <option value="scanner" {{if eq .Widget.AnimationType "scanner"}}selected{{end}}>Scanner</option>
+        <option value="life" {{if eq .Widget.AnimationType "life"}}selected{{end}}>Life</option>
+      </select>
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group">
+      <label>Repeats</label>
+      <input type="number" name="widgets[{{.Index}}].repeats" value="{{if .Widget.Repeats}}{{derefInt .Widget.Repeats}}{{end}}" placeholder="0">
+    </div>
+    <div class="form-group">
+      <label>Frame Duration</label>
+      <input type="text" name="widgets[{{.Index}}].frame_duration" value="{{if .Widget.FrameDuration.Unwrap}}{{.Widget.FrameDuration.Unwrap}}{{end}}" placeholder="100ms">
+    </div>
+  </div>
+</div>
+{{end}}

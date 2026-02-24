@@ -1,0 +1,29 @@
+{{define "content"}}
+<div class="breadcrumb">
+  <a href="/">Instances</a> / <a href="/instances/{{.Instance.ID}}/config">{{.Instance.Name}}</a> / Raw JSON
+</div>
+
+<div class="header">
+  <h1>{{.Instance.Name}} — Raw JSON</h1>
+</div>
+
+{{if .Error}}
+<div class="alert alert-error">{{.Error}}</div>
+{{end}}
+{{if .Success}}
+<div class="alert alert-success">{{.Success}}</div>
+{{end}}
+
+<form method="POST" action="/instances/{{.Instance.ID}}/config/json">
+  <div class="card">
+    <div class="form-group">
+      <label for="json">Configuration JSON</label>
+      <textarea id="json" name="json" rows="20">{{.JSON}}</textarea>
+    </div>
+  </div>
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">Save to Redis</button>
+    <a href="/instances/{{.Instance.ID}}/config" class="btn">Cancel</a>
+  </div>
+</form>
+{{end}}

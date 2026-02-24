@@ -1,0 +1,135 @@
+{{define "content"}}
+<div class="breadcrumb">
+  <a href="/">Instances</a> / <a href="/instances/{{.Instance.ID}}/config">{{.Instance.Name}}</a> / Edit
+</div>
+
+<div class="header">
+  <h1>{{.Instance.Name}} — Edit Configuration</h1>
+</div>
+
+{{if .Error}}
+<div class="alert alert-error">{{.Error}}</div>
+{{end}}
+{{if .Success}}
+<div class="alert alert-success">{{.Success}}</div>
+{{end}}
+
+<form method="POST" action="/instances/{{.Instance.ID}}/config">
+  <div class="card">
+    <div class="config-section">
+      <h3>Display</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="display.type">Type</label>
+          <select id="display.type" name="display.type">
+            <option value="max7219" {{if eq (str .Config.Display.Type) "max7219"}}selected{{end}}>MAX7219 (32x8 Pixel)</option>
+            <option value="tm1637" {{if eq (str .Config.Display.Type) "tm1637"}}selected{{end}}>TM1637 (7-Segment)</option>
+            <option value="ht16k33" {{if eq (str .Config.Display.Type) "ht16k33"}}selected{{end}}>HT16K33 (14-Segment)</option>
+          </select>
+        </div>
+        <div></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="display.clk_pin">CLK Pin (TM1637)</label>
+          <input type="text" id="display.clk_pin" name="display.clk_pin" value="{{.Config.Display.ClkPin}}" placeholder="GPIO6">
+        </div>
+        <div class="form-group">
+          <label for="display.dio_pin">DIO Pin (TM1637)</label>
+          <input type="text" id="display.dio_pin" name="display.dio_pin" value="{{.Config.Display.DioPin}}" placeholder="GPIO5">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="display.i2c_bus">I2C Bus (HT16K33)</label>
+          <input type="text" id="display.i2c_bus" name="display.i2c_bus" value="{{.Config.Display.I2CBus}}" placeholder="I2C1">
+        </div>
+        <div class="form-group">
+          <label for="display.i2c_addr">I2C Address (HT16K33)</label>
+          <input type="text" id="display.i2c_addr" name="display.i2c_addr" value="{{if .Config.Display.I2CAddr}}0x{{printf "%02x" .Config.Display.I2CAddr}}{{end}}" placeholder="0x70">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="display.layout">Layout (HT16K33)</label>
+        <select id="display.layout" name="display.layout">
+          <option value="" {{if eq .Config.Display.Layout ""}}selected{{end}}>Default</option>
+          <option value="sequential" {{if eq .Config.Display.Layout "sequential"}}selected{{end}}>Sequential</option>
+          <option value="adafruit" {{if eq .Config.Display.Layout "adafruit"}}selected{{end}}>Adafruit</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="config-section">
+      <h3>Brightness</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="brightness.high">High (0-15)</label>
+          <input type="number" id="brightness.high" name="brightness.high" value="{{.Config.Brightness.High}}" min="0" max="15">
+        </div>
+        <div class="form-group">
+          <label for="brightness.low">Low (0-15)</label>
+          <input type="number" id="brightness.low" name="brightness.low" value="{{.Config.Brightness.Low}}" min="0" max="15">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="brightness.day_start">Day Start</label>
+          <input type="text" id="brightness.day_start" name="brightness.day_start" value="{{.Config.Brightness.DayStart}}" placeholder="07:00">
+        </div>
+        <div class="form-group">
+          <label for="brightness.day_end">Day End</label>
+          <input type="text" id="brightness.day_end" name="brightness.day_end" value="{{.Config.Brightness.DayEnd}}" placeholder="22:00">
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="checkbox-group">
+          <input type="checkbox" id="brightness.use_location" name="brightness.use_location" {{if .Config.Brightness.UseLocation}}checked{{end}}>
+          <label for="brightness.use_location">Use location for sunrise/sunset</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="config-section">
+      <h3>Location (optional)</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="location.lat">Latitude</label>
+          <input type="text" id="location.lat" name="location.lat" value="{{if .Config.Location}}{{.Config.Location.Lat}}{{end}}" placeholder="40.7128">
+        </div>
+        <div class="form-group">
+          <label for="location.lon">Longitude</label>
+          <input type="text" id="location.lon" name="location.lon" value="{{if .Config.Location}}{{.Config.Location.Lon}}{{end}}" placeholder="-74.0060">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="location.timezone">Timezone</label>
+        <input type="text" id="location.timezone" name="location.timezone" value="{{if .Config.Location}}{{.Config.Location.Timezone}}{{end}}" placeholder="America/New_York">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="config-section">
+      <h3>Widgets</h3>
+      <div id="widget-list">
+        {{range $i, $w := .Config.Widgets}}
+        {{template "widget_form" map "Index" $i "Widget" $w}}
+        {{end}}
+      </div>
+      <button type="button" class="btn"
+        hx-post="/instances/{{.Instance.ID}}/config/widgets/add?count={{len .Config.Widgets}}"
+        hx-target="#widget-list"
+        hx-swap="beforeend">Add Widget</button>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">Save Configuration</button>
+    <a href="/instances/{{.Instance.ID}}/config" class="btn">Cancel</a>
+  </div>
+</form>
+{{end}}

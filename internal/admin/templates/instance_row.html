@@ -1,0 +1,26 @@
+{{define "instance_row"}}
+<tr id="instance-{{.ID}}">
+  <td><a href="/instances/{{.ID}}/config">{{.Name}}</a></td>
+  <td>{{.Host}}</td>
+  <td>{{.Port}}</td>
+  <td>
+    <span id="status-{{.ID}}" class="badge badge-pending">unknown</span>
+  </td>
+  <td>
+    <button class="btn btn-sm"
+      hx-post="/instances/{{.ID}}/test"
+      hx-target="#status-{{.ID}}"
+      hx-swap="outerHTML">Test</button>
+    <a href="/instances/{{.ID}}/config" class="btn btn-sm">Config</a>
+    <button class="btn btn-sm"
+      hx-get="/instances/{{.ID}}/edit"
+      hx-target="#instance-form-area"
+      hx-swap="innerHTML">Edit</button>
+    <button class="btn btn-sm btn-danger"
+      hx-delete="/instances/{{.ID}}"
+      hx-target="#instance-{{.ID}}"
+      hx-swap="outerHTML"
+      hx-confirm="Remove this instance?">Remove</button>
+  </td>
+</tr>
+{{end}}

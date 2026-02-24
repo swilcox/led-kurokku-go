@@ -1,0 +1,82 @@
+{{define "content"}}
+<div class="breadcrumb">
+  <a href="/">Instances</a> / {{.Instance.Name}} / Config
+</div>
+
+<div class="header">
+  <h1>{{.Instance.Name}} — Configuration</h1>
+  <div>
+    <a href="/instances/{{.Instance.ID}}/config/json" class="btn btn-sm">Raw JSON</a>
+    <a href="/instances/{{.Instance.ID}}/config/edit" class="btn btn-primary">Edit</a>
+  </div>
+</div>
+
+{{if .Error}}
+<div class="alert alert-error">{{.Error}}</div>
+{{end}}
+
+{{if not .HasConfig}}
+<div class="empty-state">
+  <p>No config found in Redis for this instance.</p>
+  <p><a href="/instances/{{.Instance.ID}}/config/edit" class="btn btn-primary">Create Config</a></p>
+</div>
+{{else}}
+<div class="card">
+  <div class="config-section">
+    <h3>Display</h3>
+    <table>
+      <tr><td>Type</td><td>{{.Config.Display.Type}}</td></tr>
+      {{if .Config.Display.ClkPin}}<tr><td>CLK Pin</td><td>{{.Config.Display.ClkPin}}</td></tr>{{end}}
+      {{if .Config.Display.DioPin}}<tr><td>DIO Pin</td><td>{{.Config.Display.DioPin}}</td></tr>{{end}}
+      {{if .Config.Display.I2CAddr}}<tr><td>I2C Address</td><td>0x{{printf "%02x" .Config.Display.I2CAddr}}</td></tr>{{end}}
+      {{if .Config.Display.I2CBus}}<tr><td>I2C Bus</td><td>{{.Config.Display.I2CBus}}</td></tr>{{end}}
+      {{if .Config.Display.Layout}}<tr><td>Layout</td><td>{{.Config.Display.Layout}}</td></tr>{{end}}
+    </table>
+  </div>
+
+  <div class="config-section">
+    <h3>Brightness</h3>
+    <table>
+      <tr><td>High</td><td>{{.Config.Brightness.High}}</td></tr>
+      <tr><td>Low</td><td>{{.Config.Brightness.Low}}</td></tr>
+      {{if .Config.Brightness.DayStart}}<tr><td>Day Start</td><td>{{.Config.Brightness.DayStart}}</td></tr>{{end}}
+      {{if .Config.Brightness.DayEnd}}<tr><td>Day End</td><td>{{.Config.Brightness.DayEnd}}</td></tr>{{end}}
+      {{if .Config.Brightness.UseLocation}}<tr><td>Use Location</td><td>Yes</td></tr>{{end}}
+    </table>
+  </div>
+
+  {{if .Config.Location}}
+  <div class="config-section">
+    <h3>Location</h3>
+    <table>
+      <tr><td>Latitude</td><td>{{.Config.Location.Lat}}</td></tr>
+      <tr><td>Longitude</td><td>{{.Config.Location.Lon}}</td></tr>
+      {{if .Config.Location.Timezone}}<tr><td>Timezone</td><td>{{.Config.Location.Timezone}}</td></tr>{{end}}
+    </table>
+  </div>
+  {{end}}
+
+  <div class="config-section">
+    <h3>Widgets ({{len .Config.Widgets}})</h3>
+    {{range $i, $w := .Config.Widgets}}
+    <div class="widget-card">
+      <div class="widget-header">
+        <h3>#{{inc $i}} — {{$w.Type}}</h3>
+        <span class="badge {{if $w.Enabled}}badge-success{{else}}badge-error{{end}}">
+          {{if $w.Enabled}}enabled{{else}}disabled{{end}}
+        </span>
+      </div>
+      <table>
+        <tr><td>Duration</td><td>{{$w.Duration.Unwrap}}</td></tr>
+        {{if $w.Cron}}<tr><td>Cron</td><td>{{$w.Cron}}</td></tr>{{end}}
+        {{if $w.Text}}<tr><td>Text</td><td>{{$w.Text}}</td></tr>{{end}}
+        {{if $w.DynamicSource}}<tr><td>Dynamic Source</td><td>{{$w.DynamicSource}}</td></tr>{{end}}
+        {{if $w.Format24h}}<tr><td>24h Format</td><td>{{derefBool $w.Format24h}}</td></tr>{{end}}
+        {{if $w.AnimationType}}<tr><td>Animation</td><td>{{$w.AnimationType}}</td></tr>{{end}}
+      </table>
+    </div>
+    {{end}}
+  </div>
+</div>
+{{end}}
+{{end}}
