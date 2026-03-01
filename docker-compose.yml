@@ -7,10 +7,7 @@ services:
       - valkey-data:/data
 
   kurokku:
-    build:
-      context: .
-      platforms:
-        - linux/arm64
+    image: ghcr.io/swilcox/led-kurokku:latest
     privileged: true
     user: root
     cap_add:
@@ -29,5 +26,23 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
 
+  kurokku-admin:
+    image: ghcr.io/swilcox/led-kurokku-admin:latest
+    depends_on:
+      - valkey
+    environment:
+      - REDIS_HOST=valkey
+      - REDIS_PORT=6379
+    ports:
+      - "8080:8080"
+    volumes:
+      - admin-data:/data
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    command: ["-store", "/data/kurokku-admin.json"]
+    profiles:
+      - admin
+
 volumes:
   valkey-data:
+  admin-data:

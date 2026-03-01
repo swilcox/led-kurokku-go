@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build
+        run: go build ./...
+
+      - name: Test with coverage
+        run: go test -coverprofile=coverage.out -covermode=atomic ./...
+
+      - name: Report coverage percentage
+        run: |
+          COVERAGE=$(go tool cover -func=coverage.out | grep ^total: | awk '{print $3}')
+          echo "## Coverage: ${COVERAGE}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage.out
+
+      - name: Generate coverage badge
+        uses: ncruces/go-coverage-report@v0
+        with:
+          coverage-file: coverage.out
+          report: true
+          chart: true
+          amend: true
+        if: github.event_name == 'push'
+        continue-on-error: true
