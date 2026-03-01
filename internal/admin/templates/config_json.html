@@ -7,14 +7,22 @@
   <h1>{{.Instance.Name}} — Raw JSON</h1>
 </div>
 
+<div id="form-errors">
 {{if .Error}}
 <div class="alert alert-error">{{.Error}}</div>
 {{end}}
-{{if .Success}}
-<div class="alert alert-success">{{.Success}}</div>
-{{end}}
+</div>
 
-<form method="POST" action="/instances/{{.Instance.ID}}/config/json">
+<div id="save-overlay" class="save-overlay" style="display:none">
+  <div class="save-overlay-content">
+    <div class="spinner"></div>
+    <p>Saving configuration to Redis...</p>
+  </div>
+</div>
+<form hx-post="/instances/{{.Instance.ID}}/config/json"
+  hx-indicator="#save-overlay"
+  hx-target="#form-errors"
+  hx-swap="innerHTML">
   <div class="card">
     <div class="form-group">
       <label for="json">Configuration JSON</label>

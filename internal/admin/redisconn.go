@@ -76,6 +76,24 @@ func SaveConfig(host string, port int, cfg *config.Config) error {
 	return SaveConfigJSON(host, port, string(data))
 }
 
+// FetchKey reads an arbitrary Redis key, returning its value.
+// Returns ("", nil) when the key does not exist.
+func FetchKey(host string, port int, key string) (string, error) {
+	rdb := dialRedis(host, port)
+	defer rdb.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	val, err := rdb.Get(ctx, key).Result()
+	if err == redis.Nil {
+		return "", nil
+	}
+	if err != nil {
+		return "", fmt.Errorf("GET %s: %w", key, err)
+	}
+	return val, nil
+}
+
 // SaveConfigJSON writes raw JSON to the kurokku:config key.
 func SaveConfigJSON(host string, port int, jsonStr string) error {
 	rdb := dialRedis(host, port)

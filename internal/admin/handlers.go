@@ -3,6 +3,7 @@ package admin
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"strconv"
@@ -151,10 +152,15 @@ func (s *Server) handleConfigView(w http.ResponseWriter, r *http.Request) {
 
 	cfg, found, err := FetchConfig(inst.Host, inst.Port)
 	data := map[string]interface{}{
-		"Instance":  inst,
-		"Config":    cfg,
-		"HasConfig": found,
-		"Error":     "",
+		"Instance":       inst,
+		"Config":         cfg,
+		"HasConfig":      found,
+		"Error":          "",
+		"Preview":        template.HTML(""),
+		"PreviewLabel":   "",
+		"PreviewWidgetNum": 0,
+		"NextWidget":     0,
+		"PreviewDelay":   5,
 	}
 	if err != nil {
 		data["Error"] = fmt.Sprintf("Failed to fetch config: %v", err)
@@ -162,10 +168,63 @@ func (s *Server) handleConfigView(w http.ResponseWriter, r *http.Request) {
 	if cfg == nil {
 		data["Config"] = &config.Config{}
 	}
+	if found && cfg != nil {
+		enabled := enabledWidgets(cfg)
+		if len(enabled) > 0 {
+			idx := enabled[0]
+			html, label := previewWidgetHTML(cfg, inst.Host, inst.Port, idx)
+			data["Preview"] = html
+			data["PreviewLabel"] = label
+			data["PreviewWidgetNum"] = idx + 1
+			data["PreviewDelay"] = previewDuration(cfg.Widgets[idx])
+			// Next widget in the enabled list (wraps around)
+			if len(enabled) > 1 {
+				data["NextWidget"] = 1
+			} else {
+				data["NextWidget"] = 0
+			}
+		}
+	}
 
 	if err := renderPage(w, "templates/config_view.html", data); err != nil {
 		log.Printf("render config_view: %v", err)
 	}
+}
+
+func (s *Server) handlePreview(w http.ResponseWriter, r *http.Request) {
+	inst := s.store.Get(r.PathValue("id"))
+	if inst == nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	cfg, _, err := FetchConfig(inst.Host, inst.Port)
+	if err != nil || cfg == nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	enabled := enabledWidgets(cfg)
+	if len(enabled) == 0 {
+		http.NotFound(w, r)
+		return
+	}
+
+	// w query param is the index into the enabled list
+	wParam, _ := strconv.Atoi(r.URL.Query().Get("w"))
+	if wParam < 0 || wParam >= len(enabled) {
+		wParam = 0
+	}
+
+	cfgIdx := enabled[wParam]
+	preview, label := previewWidgetHTML(cfg, inst.Host, inst.Port, cfgIdx)
+	delay := previewDuration(cfg.Widgets[cfgIdx])
+	nextW := (wParam + 1) % len(enabled)
+
+	fmt.Fprintf(w, `<div id="preview-area" hx-get="/instances/%s/config/preview?w=%d" hx-trigger="load delay:%ds" hx-swap="outerHTML">`, inst.ID, nextW, delay)
+	fmt.Fprintf(w, `<div class="preview-label">#%d — %s</div>`, cfgIdx+1, template.HTMLEscapeString(label))
+	fmt.Fprintf(w, `<div class="preview-container">%s</div>`, preview)
+	fmt.Fprint(w, `</div>`)
 }
 
 func (s *Server) handleConfigEdit(w http.ResponseWriter, r *http.Request) {
@@ -205,28 +264,17 @@ func (s *Server) handleConfigSave(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	cfg, parseErr := parseConfigForm(r)
 	if parseErr != "" {
-		data := map[string]interface{}{
-			"Instance": inst,
-			"Config":   cfg,
-			"Error":    parseErr,
-			"Success":  "",
-		}
-		renderPage(w, "templates/config_edit.html", data)
+		renderErrorAlert(w, parseErr)
 		return
 	}
 
 	if err := SaveConfig(inst.Host, inst.Port, cfg); err != nil {
-		data := map[string]interface{}{
-			"Instance": inst,
-			"Config":   cfg,
-			"Error":    fmt.Sprintf("Failed to save: %v", err),
-			"Success":  "",
-		}
-		renderPage(w, "templates/config_edit.html", data)
+		renderErrorAlert(w, fmt.Sprintf("Failed to save: %v", err))
 		return
 	}
 
-	http.Redirect(w, r, fmt.Sprintf("/instances/%s/config", inst.ID), http.StatusSeeOther)
+	w.Header().Set("HX-Redirect", fmt.Sprintf("/instances/%s/config", inst.ID))
+	w.WriteHeader(http.StatusOK)
 }
 
 func (s *Server) handleConfigJSON(w http.ResponseWriter, r *http.Request) {
@@ -277,33 +325,22 @@ func (s *Server) handleConfigJSONSave(w http.ResponseWriter, r *http.Request) {
 
 	// Validate JSON.
 	if _, err := config.Parse([]byte(jsonStr)); err != nil {
-		data := map[string]interface{}{
-			"Instance": inst,
-			"JSON":     jsonStr,
-			"Error":    fmt.Sprintf("Invalid JSON: %v", err),
-			"Success":  "",
-		}
-		renderPage(w, "templates/config_json.html", data)
+		renderErrorAlert(w, fmt.Sprintf("Invalid JSON: %v", err))
 		return
 	}
 
 	if err := SaveConfigJSON(inst.Host, inst.Port, jsonStr); err != nil {
-		data := map[string]interface{}{
-			"Instance": inst,
-			"JSON":     jsonStr,
-			"Error":    fmt.Sprintf("Failed to save: %v", err),
-			"Success":  "",
-		}
-		renderPage(w, "templates/config_json.html", data)
+		renderErrorAlert(w, fmt.Sprintf("Failed to save: %v", err))
 		return
 	}
 
-	http.Redirect(w, r, fmt.Sprintf("/instances/%s/config", inst.ID), http.StatusSeeOther)
+	w.Header().Set("HX-Redirect", fmt.Sprintf("/instances/%s/config", inst.ID))
+	w.WriteHeader(http.StatusOK)
 }
 
 func (s *Server) handleWidgetAdd(w http.ResponseWriter, r *http.Request) {
-	countStr := r.URL.Query().Get("count")
-	idx, _ := strconv.Atoi(countStr)
+	r.ParseForm()
+	idx, _ := strconv.Atoi(r.FormValue("count"))
 
 	wc := config.WidgetConfig{
 		Type:    "clock",
@@ -319,12 +356,46 @@ func (s *Server) handleWidgetAdd(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *Server) handleWidgetForm(w http.ResponseWriter, r *http.Request) {
+	idx, _ := strconv.Atoi(r.FormValue("index"))
+	prefix := fmt.Sprintf("widgets[%d].", idx)
+
+	wType := r.FormValue(prefix + "type")
+	if wType == "" {
+		wType = "clock"
+	}
+
+	wc := config.WidgetConfig{
+		Type:    wType,
+		Enabled: r.FormValue(prefix+"enabled") == "on",
+		Cron:    r.FormValue(prefix + "cron"),
+	}
+	if durStr := r.FormValue(prefix + "duration"); durStr != "" {
+		if dur, err := time.ParseDuration(durStr); err == nil {
+			wc.Duration = config.Duration(dur)
+		}
+	}
+
+	data := map[string]interface{}{
+		"Index":  idx,
+		"Widget": wc,
+	}
+	if err := renderPartial(w, "widget_form", data); err != nil {
+		log.Printf("render widget_form: %v", err)
+	}
+}
+
 func (s *Server) handleWidgetRemove(w http.ResponseWriter, r *http.Request) {
 	// Return empty response so htmx removes the element.
 	w.WriteHeader(http.StatusOK)
 }
 
 // --- Helpers ---
+
+func renderErrorAlert(w http.ResponseWriter, msg string) {
+	w.WriteHeader(http.StatusUnprocessableEntity)
+	fmt.Fprintf(w, `<div class="alert alert-error">%s</div>`, template.HTMLEscapeString(msg))
+}
 
 func renderFormError(w http.ResponseWriter, id, name, host string, port int, errMsg string) {
 	data := map[string]interface{}{

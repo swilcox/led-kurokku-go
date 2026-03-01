@@ -77,7 +77,8 @@ func (c *Client) FetchAlerts(ctx context.Context) ([]config.AlertConfig, error) 
 		}
 		var ac config.AlertConfig
 		if err := json.Unmarshal([]byte(raw), &ac); err != nil {
-			return nil, fmt.Errorf("unmarshal alert %s: %w", key, err)
+			log.Printf("skipping malformed alert %s: %v", key, err)
+			continue
 		}
 		// Derive ID from key suffix if not set in JSON.
 		if ac.ID == "" {

@@ -21,6 +21,24 @@
   <p><a href="/instances/{{.Instance.ID}}/config/edit" class="btn btn-primary">Create Config</a></p>
 </div>
 {{else}}
+
+{{if .Preview}}
+<div class="card">
+  <div class="config-section">
+    <h3>Display Preview</h3>
+    <div id="preview-area"
+         hx-get="/instances/{{.Instance.ID}}/config/preview?w={{.NextWidget}}"
+         hx-trigger="load delay:{{.PreviewDelay}}s"
+         hx-swap="outerHTML">
+      <div class="preview-label">#{{.PreviewWidgetNum}} — {{.PreviewLabel}}</div>
+      <div class="preview-container">
+        {{.Preview}}
+      </div>
+    </div>
+  </div>
+</div>
+{{end}}
+
 <div class="card">
   <div class="config-section">
     <h3>Display</h3>

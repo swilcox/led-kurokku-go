@@ -31,11 +31,13 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("POST /instances/{id}/test", s.handleInstanceTest)
 
 	s.mux.HandleFunc("GET /instances/{id}/config", s.handleConfigView)
+	s.mux.HandleFunc("GET /instances/{id}/config/preview", s.handlePreview)
 	s.mux.HandleFunc("GET /instances/{id}/config/edit", s.handleConfigEdit)
 	s.mux.HandleFunc("POST /instances/{id}/config", s.handleConfigSave)
 	s.mux.HandleFunc("GET /instances/{id}/config/json", s.handleConfigJSON)
 	s.mux.HandleFunc("POST /instances/{id}/config/json", s.handleConfigJSONSave)
 	s.mux.HandleFunc("POST /instances/{id}/config/widgets/add", s.handleWidgetAdd)
+	s.mux.HandleFunc("GET /config/widgets/form", s.handleWidgetForm)
 	s.mux.HandleFunc("DELETE /instances/{id}/config/widgets/{idx}", s.handleWidgetRemove)
 }
 

@@ -9,8 +9,7 @@
 
 <div id="instance-form-area"></div>
 
-{{if .Instances}}
-<div class="card">
+<div class="card" id="instance-table" {{if not .Instances}}style="display:none"{{end}}>
   <table>
     <thead>
       <tr>
@@ -28,10 +27,8 @@
     </tbody>
   </table>
 </div>
-{{else}}
-<div class="empty-state">
+<div id="empty-state" class="empty-state" {{if .Instances}}style="display:none"{{end}}>
   <p>No instances configured yet.</p>
   <p>Add a Kurokku clock instance to get started.</p>
 </div>
-{{end}}
 {{end}}

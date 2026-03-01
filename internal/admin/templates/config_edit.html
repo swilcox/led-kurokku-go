@@ -7,14 +7,22 @@
   <h1>{{.Instance.Name}} — Edit Configuration</h1>
 </div>
 
+<div id="form-errors">
 {{if .Error}}
 <div class="alert alert-error">{{.Error}}</div>
 {{end}}
-{{if .Success}}
-<div class="alert alert-success">{{.Success}}</div>
-{{end}}
+</div>
 
-<form method="POST" action="/instances/{{.Instance.ID}}/config">
+<div id="save-overlay" class="save-overlay" style="display:none">
+  <div class="save-overlay-content">
+    <div class="spinner"></div>
+    <p>Saving configuration to Redis...</p>
+  </div>
+</div>
+<form hx-post="/instances/{{.Instance.ID}}/config"
+  hx-indicator="#save-overlay"
+  hx-target="#form-errors"
+  hx-swap="innerHTML">
   <div class="card">
     <div class="config-section">
       <h3>Display</h3>
@@ -121,7 +129,8 @@
         {{end}}
       </div>
       <button type="button" class="btn"
-        hx-post="/instances/{{.Instance.ID}}/config/widgets/add?count={{len .Config.Widgets}}"
+        hx-post="/instances/{{.Instance.ID}}/config/widgets/add"
+        hx-vals="js:{count: document.querySelectorAll('#widget-list .widget-card').length}"
         hx-target="#widget-list"
         hx-swap="beforeend">Add Widget</button>
     </div>

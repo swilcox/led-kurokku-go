@@ -7,7 +7,10 @@ services:
       - valkey-data:/data
 
   kurokku:
-    build: .
+    build:
+      context: .
+      platforms:
+        - linux/arm64
     privileged: true
     user: root
     cap_add:
@@ -23,7 +26,6 @@ services:
       - REDIS_HOST=valkey
       - REDIS_PORT=6379
     volumes:
-      - ./config.json:/etc/kurokku/config.json:ro
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
 
