@@ -76,6 +76,80 @@ func TestClock_12h_PM_WritesFrames(t *testing.T) {
 	}
 }
 
+func TestClock_Name(t *testing.T) {
+	clk := &widget.Clock{}
+	if clk.Name() != "clock" {
+		t.Errorf("Name() = %q, want %q", clk.Name(), "clock")
+	}
+}
+
+func TestClock_12h_Midnight_Shows12(t *testing.T) {
+	fixed := time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC) // midnight = 12:00 AM
+	spy := &testutil.SpyDisplay{}
+	ctx, cancel := context.WithCancel(context.Background())
+
+	clk := &widget.Clock{
+		Format24h: false,
+		NowFunc:   func() time.Time { return fixed },
+	}
+
+	go func() {
+		time.Sleep(20 * time.Millisecond)
+		cancel()
+	}()
+
+	clk.Run(ctx, spy)
+
+	if len(spy.Frames) == 0 {
+		t.Error("expected frames for midnight display")
+	}
+}
+
+func TestClock_24h_Midnight(t *testing.T) {
+	fixed := time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC)
+	spy := &testutil.SpyDisplay{}
+	ctx, cancel := context.WithCancel(context.Background())
+
+	clk := &widget.Clock{
+		Format24h: true,
+		NowFunc:   func() time.Time { return fixed },
+	}
+
+	go func() {
+		time.Sleep(20 * time.Millisecond)
+		cancel()
+	}()
+
+	clk.Run(ctx, spy)
+
+	if len(spy.Frames) == 0 {
+		t.Error("expected frames for 24h midnight")
+	}
+}
+
+func TestClock_12h_Hour10AM(t *testing.T) {
+	// 10:00 AM — hour >= 10 should use %02d format
+	fixed := time.Date(2024, 1, 15, 10, 0, 0, 0, time.UTC)
+	spy := &testutil.SpyDisplay{}
+	ctx, cancel := context.WithCancel(context.Background())
+
+	clk := &widget.Clock{
+		Format24h: false,
+		NowFunc:   func() time.Time { return fixed },
+	}
+
+	go func() {
+		time.Sleep(20 * time.Millisecond)
+		cancel()
+	}()
+
+	clk.Run(ctx, spy)
+
+	if len(spy.Frames) == 0 {
+		t.Error("expected frames for 10:00 AM")
+	}
+}
+
 func TestClock_NowFuncUsed(t *testing.T) {
 	callCount := 0
 	spy := &testutil.SpyDisplay{}

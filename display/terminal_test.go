@@ -72,3 +72,19 @@ func TestTerminal_Init_Close(t *testing.T) {
 		t.Errorf("Close: unexpected error: %v", err)
 	}
 }
+
+func TestTerminal_SetBrightness(t *testing.T) {
+	var buf bytes.Buffer
+	d := display.NewTerminal(&buf)
+	d.SetBrightness(10) // no-op, should not panic
+}
+
+func TestTerminal_Clear(t *testing.T) {
+	var buf bytes.Buffer
+	d := display.NewTerminal(&buf)
+	d.Clear()
+	output := buf.String()
+	if !strings.Contains(output, "\033[2J") {
+		t.Error("expected ANSI clear sequence")
+	}
+}

@@ -163,6 +163,35 @@ func TestAlert_Priority1_AlwaysDisplayed(t *testing.T) {
 	}
 }
 
+func TestAlert_Name(t *testing.T) {
+	a := &widget.Alert{}
+	if a.Name() != "alert" {
+		t.Errorf("Name() = %q, want %q", a.Name(), "alert")
+	}
+}
+
+func TestAlert_DeleteAfterDisplay_WithoutOnDelete(t *testing.T) {
+	spy := &testutil.SpyDisplay{}
+	a := &widget.Alert{
+		Alerts: []config.AlertConfig{
+			{
+				ID:                 "del1",
+				Message:            "Hi",
+				Priority:           1,
+				DisplayDuration:    config.Duration(time.Millisecond),
+				DeleteAfterDisplay: true,
+			},
+		},
+		// No OnDelete — should remove from internal list
+	}
+
+	a.Run(context.Background(), spy)
+
+	if len(a.Alerts) != 0 {
+		t.Errorf("expected alerts to be removed after display, got %d", len(a.Alerts))
+	}
+}
+
 func TestAlert_OnDelete_NotCalledWithoutFlag(t *testing.T) {
 	var deleted []string
 	spy := &testutil.SpyDisplay{}

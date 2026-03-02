@@ -2,6 +2,7 @@ package engine
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -733,6 +734,98 @@ func TestEngine_Run_SegmentWidget(t *testing.T) {
 	}
 	if len(spy.Calls) == 0 {
 		t.Error("expected segment writes for segment display")
+	}
+}
+
+func TestEngine_RunInterruptAlerts_Pixel(t *testing.T) {
+	spy := &testutil.SpyDisplay{}
+	cfg := &config.Config{
+		Display:    config.DisplayConfig{Type: config.DisplayTerminal},
+		Brightness: brightnessCfg(),
+	}
+	mock := &mockRedis{
+		alerts: []config.AlertConfig{
+			{ID: "a1", Message: "Alert!", Priority: 1, DisplayDuration: config.Duration(50 * time.Millisecond)},
+		},
+	}
+	e := New(spy, cfg, nil)
+	e.rds = mock
+
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+
+	e.runInterruptAlerts(ctx)
+
+	if len(spy.Frames) == 0 {
+		t.Error("expected frames from interrupt alert display")
+	}
+}
+
+func TestEngine_RunInterruptAlerts_Segment(t *testing.T) {
+	spy := &testutil.SpySegmentDisplay{}
+	cfg := &config.Config{
+		Display:    config.DisplayConfig{Type: config.DisplayTerminalSeg7},
+		Brightness: brightnessCfg(),
+	}
+	mock := &mockRedis{
+		alerts: []config.AlertConfig{
+			{ID: "a1", Message: "Hi", Priority: 1, DisplayDuration: config.Duration(50 * time.Millisecond)},
+		},
+	}
+	e := New(spy, cfg, nil)
+	e.rds = mock
+
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+
+	e.runInterruptAlerts(ctx)
+
+	if len(spy.Calls) == 0 {
+		t.Error("expected segment writes from interrupt alert display")
+	}
+}
+
+func TestEngine_RunInterruptAlerts_NoRedis(t *testing.T) {
+	spy := &testutil.SpyDisplay{}
+	cfg := &config.Config{
+		Display:    config.DisplayConfig{Type: config.DisplayTerminal},
+		Brightness: brightnessCfg(),
+	}
+	e := New(spy, cfg, nil)
+	// rds is nil — should return immediately
+	e.runInterruptAlerts(context.Background())
+	if len(spy.Frames) != 0 {
+		t.Error("expected no frames when Redis is nil")
+	}
+}
+
+func TestEngine_RunInterruptAlerts_NoAlerts(t *testing.T) {
+	spy := &testutil.SpyDisplay{}
+	cfg := &config.Config{
+		Display:    config.DisplayConfig{Type: config.DisplayTerminal},
+		Brightness: brightnessCfg(),
+	}
+	e := New(spy, cfg, nil)
+	e.rds = &mockRedis{alerts: nil}
+
+	e.runInterruptAlerts(context.Background())
+	if len(spy.Frames) != 0 {
+		t.Error("expected no frames when no alerts")
+	}
+}
+
+func TestEngine_RunInterruptAlerts_FetchError(t *testing.T) {
+	spy := &testutil.SpyDisplay{}
+	cfg := &config.Config{
+		Display:    config.DisplayConfig{Type: config.DisplayTerminal},
+		Brightness: brightnessCfg(),
+	}
+	e := New(spy, cfg, nil)
+	e.rds = &mockRedis{err: fmt.Errorf("redis down")}
+
+	e.runInterruptAlerts(context.Background())
+	if len(spy.Frames) != 0 {
+		t.Error("expected no frames on fetch error")
 	}
 }
 

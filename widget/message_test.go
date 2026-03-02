@@ -55,6 +55,26 @@ func TestMessage_Scroll_RespectsRepeats(t *testing.T) {
 	}
 }
 
+func TestMessage_Name(t *testing.T) {
+	m := &widget.Message{}
+	if m.Name() != "message" {
+		t.Errorf("Name() = %q, want %q", m.Name(), "message")
+	}
+}
+
+func TestMessage_Scroll_DefaultSpeed(t *testing.T) {
+	spy := &testutil.SpyDisplay{}
+	m := &widget.Message{
+		Text:    "Hello World!",
+		Repeats: 1,
+		// ScrollSpeed = 0 → uses default 50ms
+	}
+	m.Run(context.Background(), spy)
+	if len(spy.Frames) < 2 {
+		t.Errorf("expected scrolling with default speed, got %d frames", len(spy.Frames))
+	}
+}
+
 func TestMessage_Static_32ColsWide(t *testing.T) {
 	spy := &testutil.SpyDisplay{}
 	ctx, cancel := context.WithCancel(context.Background())

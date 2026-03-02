@@ -318,6 +318,98 @@ func TestFrameAnimation_Name(t *testing.T) {
 	}
 }
 
+func TestRain_Name(t *testing.T) {
+	r := &animation.Rain{}
+	if r.Name() != "rain" {
+		t.Errorf("Name() = %q, want %q", r.Name(), "rain")
+	}
+}
+
+func TestRain_WritesFrames(t *testing.T) {
+	spy := &testutil.SpyDisplay{}
+	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer cancel()
+	(&animation.Rain{}).Run(ctx, spy)
+	if len(spy.Frames) == 0 {
+		t.Error("expected frames from Rain animation")
+	}
+}
+
+func TestRain_CancelledImmediately(t *testing.T) {
+	spy := &testutil.SpyDisplay{}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	err := (&animation.Rain{}).Run(ctx, spy)
+	if err == nil {
+		t.Error("expected error from cancelled context")
+	}
+}
+
+func TestStatic_Name(t *testing.T) {
+	s := &animation.Static{}
+	if s.Name() != "static" {
+		t.Errorf("Name() = %q, want %q", s.Name(), "static")
+	}
+}
+
+func TestStatic_WritesFrames(t *testing.T) {
+	spy := &testutil.SpyDisplay{}
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+	(&animation.Static{}).Run(ctx, spy)
+	if len(spy.Frames) == 0 {
+		t.Error("expected frames from Static animation")
+	}
+}
+
+func TestStatic_FramesDiffer(t *testing.T) {
+	spy := &testutil.SpyDisplay{}
+	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+	defer cancel()
+	(&animation.Static{}).Run(ctx, spy)
+	if len(spy.Frames) < 2 {
+		t.Skip("not enough frames")
+	}
+	// Random static should produce different frames
+	allSame := true
+	for _, f := range spy.Frames[1:] {
+		if !bytesEqual(f, spy.Frames[0]) {
+			allSame = false
+			break
+		}
+	}
+	if allSame {
+		t.Error("expected Static frames to differ (random noise)")
+	}
+}
+
+func TestStatic_CancelledImmediately(t *testing.T) {
+	spy := &testutil.SpyDisplay{}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	err := (&animation.Static{}).Run(ctx, spy)
+	if err == nil {
+		t.Error("expected error from cancelled context")
+	}
+}
+
+func TestSine_Name(t *testing.T) {
+	s := &animation.Sine{}
+	if s.Name() != "sine" {
+		t.Errorf("Name() = %q, want %q", s.Name(), "sine")
+	}
+}
+
+func TestSine_CancelledImmediately(t *testing.T) {
+	spy := &testutil.SpyDisplay{}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	err := (&animation.Sine{}).Run(ctx, spy)
+	if err == nil {
+		t.Error("expected error from cancelled context")
+	}
+}
+
 func TestRegistry_ContainsExpectedAnimations(t *testing.T) {
 	expected := []string{"bounce", "rain", "static", "sine", "scanner", "life"}
 	for _, name := range expected {
