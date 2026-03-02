@@ -1,7 +1,7 @@
 # LED Kurokku Go
 
 [![CI](https://github.com/swilcox/led-kurokku-go/actions/workflows/ci.yml/badge.svg)](https://github.com/swilcox/led-kurokku-go/actions/workflows/ci.yml)
-[![Go Coverage](https://github.com/swilcox/led-kurokku-go/wiki/coverage.svg)](https://raw.githack.com/wiki/swilcox/led-kurokku-go/coverage.html)
+[![Go Coverage](https://github.com/swilcox/led-kurokku-go/wiki/coverage.svg)](https://github.com/swilcox/led-kurokku-go/wiki)
 
 A Go application to drive LED displays on Raspberry Pi, with a widget-based display system and optional Redis integration for dynamic content.
 
