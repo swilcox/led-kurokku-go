@@ -259,6 +259,298 @@ func TestEngine_Run_SkipsWidgetWithNonMatchingCron(t *testing.T) {
 	}
 }
 
+func TestBuildWidgets_ClockPixel(t *testing.T) {
+	spy := &testutil.SpyDisplay{}
+	cfg := &config.Config{
+		Display:    config.DisplayConfig{Type: config.DisplayTerminal},
+		Brightness: brightnessCfg(),
+		Widgets: []config.WidgetConfig{
+			{Type: "clock", Enabled: true, Duration: config.Duration(5 * time.Second)},
+		},
+	}
+	e := New(spy, cfg, nil)
+	widgets, durations, crons := e.buildWidgets()
+	if len(widgets) != 1 {
+		t.Fatalf("expected 1 widget, got %d", len(widgets))
+	}
+	if widgets[0].Name() != "clock" {
+		t.Errorf("widget name = %q, want %q", widgets[0].Name(), "clock")
+	}
+	if durations[0] != 5*time.Second {
+		t.Errorf("duration = %v, want 5s", durations[0])
+	}
+	if crons[0] != "" {
+		t.Errorf("cron = %q, want empty", crons[0])
+	}
+}
+
+func TestBuildWidgets_ClockSegment(t *testing.T) {
+	spy := &testutil.SpySegmentDisplay{}
+	cfg := &config.Config{
+		Display:    config.DisplayConfig{Type: config.DisplayTM1637},
+		Brightness: brightnessCfg(),
+		Widgets: []config.WidgetConfig{
+			{Type: "clock", Enabled: true, Duration: config.Duration(5 * time.Second)},
+		},
+	}
+	e := New(spy, cfg, nil)
+	widgets, _, _ := e.buildWidgets()
+	if len(widgets) != 1 {
+		t.Fatalf("expected 1 widget, got %d", len(widgets))
+	}
+	if widgets[0].Name() != "segment-clock" {
+		t.Errorf("widget name = %q, want %q", widgets[0].Name(), "segment-clock")
+	}
+}
+
+func TestBuildWidgets_MessagePixel(t *testing.T) {
+	spy := &testutil.SpyDisplay{}
+	cfg := &config.Config{
+		Display:    config.DisplayConfig{Type: config.DisplayTerminal},
+		Brightness: brightnessCfg(),
+		Widgets: []config.WidgetConfig{
+			{Type: "message", Enabled: true, Text: "Hello"},
+		},
+	}
+	e := New(spy, cfg, nil)
+	widgets, _, _ := e.buildWidgets()
+	if len(widgets) != 1 {
+		t.Fatalf("expected 1 widget, got %d", len(widgets))
+	}
+	if widgets[0].Name() != "message" {
+		t.Errorf("widget name = %q, want %q", widgets[0].Name(), "message")
+	}
+}
+
+func TestBuildWidgets_AlertPixel(t *testing.T) {
+	spy := &testutil.SpyDisplay{}
+	cfg := &config.Config{
+		Display:    config.DisplayConfig{Type: config.DisplayTerminal},
+		Brightness: brightnessCfg(),
+		Widgets: []config.WidgetConfig{
+			{Type: "alert", Enabled: true},
+		},
+	}
+	e := New(spy, cfg, nil)
+	widgets, _, _ := e.buildWidgets()
+	if len(widgets) != 1 {
+		t.Fatalf("expected 1 widget, got %d", len(widgets))
+	}
+	if widgets[0].Name() != "alert" {
+		t.Errorf("widget name = %q, want %q", widgets[0].Name(), "alert")
+	}
+}
+
+func TestBuildWidgets_AlertSegment(t *testing.T) {
+	spy := &testutil.SpySegmentDisplay{}
+	cfg := &config.Config{
+		Display:    config.DisplayConfig{Type: config.DisplayTerminalSeg7},
+		Brightness: brightnessCfg(),
+		Widgets: []config.WidgetConfig{
+			{Type: "alert", Enabled: true},
+		},
+	}
+	e := New(spy, cfg, nil)
+	widgets, _, _ := e.buildWidgets()
+	if len(widgets) != 1 {
+		t.Fatalf("expected 1 widget, got %d", len(widgets))
+	}
+	if widgets[0].Name() != "segment-alert" {
+		t.Errorf("widget name = %q, want %q", widgets[0].Name(), "segment-alert")
+	}
+}
+
+func TestBuildWidgets_AnimationPixelFromRegistry(t *testing.T) {
+	spy := &testutil.SpyDisplay{}
+	cfg := &config.Config{
+		Display:    config.DisplayConfig{Type: config.DisplayTerminal},
+		Brightness: brightnessCfg(),
+		Widgets: []config.WidgetConfig{
+			{Type: "animation", Enabled: true, AnimationType: "bounce"},
+		},
+	}
+	e := New(spy, cfg, nil)
+	widgets, _, _ := e.buildWidgets()
+	if len(widgets) != 1 {
+		t.Fatalf("expected 1 widget, got %d", len(widgets))
+	}
+	if widgets[0].Name() != "bounce" {
+		t.Errorf("widget name = %q, want %q", widgets[0].Name(), "bounce")
+	}
+}
+
+func TestBuildWidgets_AnimationFrames(t *testing.T) {
+	spy := &testutil.SpyDisplay{}
+	cfg := &config.Config{
+		Display:    config.DisplayConfig{Type: config.DisplayTerminal},
+		Brightness: brightnessCfg(),
+		Widgets: []config.WidgetConfig{
+			{Type: "animation", Enabled: true, AnimationType: "frames"},
+		},
+	}
+	e := New(spy, cfg, nil)
+	widgets, _, _ := e.buildWidgets()
+	if len(widgets) != 1 {
+		t.Fatalf("expected 1 widget, got %d", len(widgets))
+	}
+}
+
+func TestBuildWidgets_SkipsDisabled(t *testing.T) {
+	spy := &testutil.SpyDisplay{}
+	cfg := &config.Config{
+		Display:    config.DisplayConfig{Type: config.DisplayTerminal},
+		Brightness: brightnessCfg(),
+		Widgets: []config.WidgetConfig{
+			{Type: "clock", Enabled: false},
+			{Type: "message", Enabled: true, Text: "Hi"},
+		},
+	}
+	e := New(spy, cfg, nil)
+	widgets, _, _ := e.buildWidgets()
+	if len(widgets) != 1 {
+		t.Fatalf("expected 1 widget (disabled skipped), got %d", len(widgets))
+	}
+	if widgets[0].Name() != "message" {
+		t.Errorf("widget name = %q, want %q", widgets[0].Name(), "message")
+	}
+}
+
+func TestBuildWidgets_SkipsUnknownType(t *testing.T) {
+	spy := &testutil.SpyDisplay{}
+	cfg := &config.Config{
+		Display:    config.DisplayConfig{Type: config.DisplayTerminal},
+		Brightness: brightnessCfg(),
+		Widgets: []config.WidgetConfig{
+			{Type: "unknown_widget", Enabled: true},
+		},
+	}
+	e := New(spy, cfg, nil)
+	widgets, _, _ := e.buildWidgets()
+	if len(widgets) != 0 {
+		t.Errorf("expected 0 widgets for unknown type, got %d", len(widgets))
+	}
+}
+
+func TestBuildWidgets_SkipsUnknownAnimationType(t *testing.T) {
+	spy := &testutil.SpyDisplay{}
+	cfg := &config.Config{
+		Display:    config.DisplayConfig{Type: config.DisplayTerminal},
+		Brightness: brightnessCfg(),
+		Widgets: []config.WidgetConfig{
+			{Type: "animation", Enabled: true, AnimationType: "nonexistent"},
+		},
+	}
+	e := New(spy, cfg, nil)
+	widgets, _, _ := e.buildWidgets()
+	if len(widgets) != 0 {
+		t.Errorf("expected 0 widgets for unknown animation type, got %d", len(widgets))
+	}
+}
+
+func TestBuildWidgets_WithRedis_MessagePixel(t *testing.T) {
+	spy := &testutil.SpyDisplay{}
+	cfg := &config.Config{
+		Display:    config.DisplayConfig{Type: config.DisplayTerminal},
+		Brightness: brightnessCfg(),
+		Widgets: []config.WidgetConfig{
+			{Type: "message", Enabled: true, Text: "fallback", DynamicSource: "mykey"},
+		},
+	}
+	e := New(spy, cfg, nil)
+	e.rds = &mockRedis{} // inject mock Redis
+	widgets, _, _ := e.buildWidgets()
+	if len(widgets) != 1 {
+		t.Fatalf("expected 1 widget, got %d", len(widgets))
+	}
+	if widgets[0].Name() != "redis-message" {
+		t.Errorf("widget name = %q, want %q", widgets[0].Name(), "redis-message")
+	}
+}
+
+func TestBuildWidgets_WithRedis_AlertPixel(t *testing.T) {
+	spy := &testutil.SpyDisplay{}
+	cfg := &config.Config{
+		Display:    config.DisplayConfig{Type: config.DisplayTerminal},
+		Brightness: brightnessCfg(),
+		Widgets: []config.WidgetConfig{
+			{Type: "alert", Enabled: true},
+		},
+	}
+	e := New(spy, cfg, nil)
+	e.rds = &mockRedis{}
+	widgets, _, _ := e.buildWidgets()
+	if len(widgets) != 1 {
+		t.Fatalf("expected 1 widget, got %d", len(widgets))
+	}
+	if widgets[0].Name() != "redis-alert" {
+		t.Errorf("widget name = %q, want %q", widgets[0].Name(), "redis-alert")
+	}
+}
+
+func TestBuildWidgets_MessageSegment(t *testing.T) {
+	spy := &testutil.SpySegmentDisplay{}
+	cfg := &config.Config{
+		Display:    config.DisplayConfig{Type: config.DisplayTerminalSeg14},
+		Brightness: brightnessCfg(),
+		Widgets: []config.WidgetConfig{
+			{Type: "message", Enabled: true, Text: "Hi"},
+		},
+	}
+	e := New(spy, cfg, nil)
+	widgets, _, _ := e.buildWidgets()
+	if len(widgets) != 1 {
+		t.Fatalf("expected 1 widget, got %d", len(widgets))
+	}
+	if widgets[0].Name() != "segment-message" {
+		t.Errorf("widget name = %q, want %q", widgets[0].Name(), "segment-message")
+	}
+}
+
+func TestBuildWidgets_CronPassedThrough(t *testing.T) {
+	spy := &testutil.SpyDisplay{}
+	cfg := &config.Config{
+		Display:    config.DisplayConfig{Type: config.DisplayTerminal},
+		Brightness: brightnessCfg(),
+		Widgets: []config.WidgetConfig{
+			{Type: "clock", Enabled: true, Cron: "0 9 * * *"},
+		},
+	}
+	e := New(spy, cfg, nil)
+	_, _, crons := e.buildWidgets()
+	if len(crons) != 1 || crons[0] != "0 9 * * *" {
+		t.Errorf("cron = %v, want [\"0 9 * * *\"]", crons)
+	}
+}
+
+func TestSegmentEncoder_TM1637(t *testing.T) {
+	spy := &testutil.SpySegmentDisplay{}
+	cfg := &config.Config{
+		Display:    config.DisplayConfig{Type: config.DisplayTM1637},
+		Brightness: brightnessCfg(),
+	}
+	e := New(spy, cfg, nil)
+	enc := e.segmentEncoder()
+	// Enc7 maps '1' to 0x06 (segments b,c)
+	if enc('1') != 0x06 {
+		t.Errorf("Enc7('1') = 0x%04X, want 0x0006", enc('1'))
+	}
+}
+
+func TestSegmentEncoder_HT16K33(t *testing.T) {
+	spy := &testutil.SpySegmentDisplay{}
+	cfg := &config.Config{
+		Display:    config.DisplayConfig{Type: config.DisplayHT16K33},
+		Brightness: brightnessCfg(),
+	}
+	e := New(spy, cfg, nil)
+	enc := e.segmentEncoder()
+	// Enc14 maps 'A' to 0x00F7 which differs from Enc7's 0x77
+	val := enc('A')
+	if val == uint16(0x77) {
+		t.Error("expected Enc14 to differ from Enc7 for 'A'")
+	}
+}
+
 func TestEngine_Run_RunsWidgetWithMatchingCron(t *testing.T) {
 	spy := &testutil.SpyDisplay{}
 	// "0 10 * * *" matches at 10:00; nowFunc returns 10:00 — should match
@@ -287,5 +579,181 @@ func TestEngine_Run_RunsWidgetWithMatchingCron(t *testing.T) {
 
 	if len(spy.Frames) == 0 {
 		t.Error("expected frames for matching cron widget, got none")
+	}
+}
+
+func TestBuildWidgets_SegmentAnimationFromRegistry(t *testing.T) {
+	spy := &testutil.SpySegmentDisplay{}
+	cfg := &config.Config{
+		Display:    config.DisplayConfig{Type: config.DisplayTerminalSeg7},
+		Brightness: brightnessCfg(),
+		Widgets: []config.WidgetConfig{
+			{Type: "animation", Enabled: true, AnimationType: "rain"},
+		},
+	}
+	e := New(spy, cfg, nil)
+	widgets, _, _ := e.buildWidgets()
+	if len(widgets) != 1 {
+		t.Fatalf("expected 1 widget, got %d", len(widgets))
+	}
+}
+
+func TestBuildWidgets_SegmentAnimationFrames(t *testing.T) {
+	spy := &testutil.SpySegmentDisplay{}
+	cfg := &config.Config{
+		Display:    config.DisplayConfig{Type: config.DisplayTerminalSeg7},
+		Brightness: brightnessCfg(),
+		Widgets: []config.WidgetConfig{
+			{Type: "animation", Enabled: true, AnimationType: "frames"},
+		},
+	}
+	e := New(spy, cfg, nil)
+	widgets, _, _ := e.buildWidgets()
+	if len(widgets) != 1 {
+		t.Fatalf("expected 1 widget, got %d", len(widgets))
+	}
+}
+
+func TestBuildWidgets_SegmentUnknownAnimation(t *testing.T) {
+	spy := &testutil.SpySegmentDisplay{}
+	cfg := &config.Config{
+		Display:    config.DisplayConfig{Type: config.DisplayTerminalSeg7},
+		Brightness: brightnessCfg(),
+		Widgets: []config.WidgetConfig{
+			{Type: "animation", Enabled: true, AnimationType: "nonexistent"},
+		},
+	}
+	e := New(spy, cfg, nil)
+	widgets, _, _ := e.buildWidgets()
+	if len(widgets) != 0 {
+		t.Errorf("expected 0 widgets for unknown segment animation, got %d", len(widgets))
+	}
+}
+
+func TestBuildWidgets_WithRedis_MessageSegment(t *testing.T) {
+	spy := &testutil.SpySegmentDisplay{}
+	cfg := &config.Config{
+		Display:    config.DisplayConfig{Type: config.DisplayTerminalSeg14},
+		Brightness: brightnessCfg(),
+		Widgets: []config.WidgetConfig{
+			{Type: "message", Enabled: true, Text: "fallback", DynamicSource: "key"},
+		},
+	}
+	e := New(spy, cfg, nil)
+	e.rds = &mockRedis{}
+	widgets, _, _ := e.buildWidgets()
+	if len(widgets) != 1 {
+		t.Fatalf("expected 1 widget, got %d", len(widgets))
+	}
+	if widgets[0].Name() != "segment-redis-message" {
+		t.Errorf("widget name = %q, want %q", widgets[0].Name(), "segment-redis-message")
+	}
+}
+
+func TestBuildWidgets_WithRedis_AlertSegment(t *testing.T) {
+	spy := &testutil.SpySegmentDisplay{}
+	cfg := &config.Config{
+		Display:    config.DisplayConfig{Type: config.DisplayTerminalSeg7},
+		Brightness: brightnessCfg(),
+		Widgets: []config.WidgetConfig{
+			{Type: "alert", Enabled: true},
+		},
+	}
+	e := New(spy, cfg, nil)
+	e.rds = &mockRedis{}
+	widgets, _, _ := e.buildWidgets()
+	if len(widgets) != 1 {
+		t.Fatalf("expected 1 widget, got %d", len(widgets))
+	}
+	if widgets[0].Name() != "segment-redis-alert" {
+		t.Errorf("widget name = %q, want %q", widgets[0].Name(), "segment-redis-alert")
+	}
+}
+
+func TestBuildWidgets_ClockFormat24hExplicitFalse(t *testing.T) {
+	spy := &testutil.SpyDisplay{}
+	f := false
+	cfg := &config.Config{
+		Display:    config.DisplayConfig{Type: config.DisplayTerminal},
+		Brightness: brightnessCfg(),
+		Widgets: []config.WidgetConfig{
+			{Type: "clock", Enabled: true, Format24h: &f},
+		},
+	}
+	e := New(spy, cfg, nil)
+	widgets, _, _ := e.buildWidgets()
+	if len(widgets) != 1 {
+		t.Fatalf("expected 1 widget, got %d", len(widgets))
+	}
+}
+
+func TestEngine_Run_WithRedis(t *testing.T) {
+	spy := &testutil.SpyDisplay{}
+	cfg := &config.Config{
+		Brightness: brightnessCfg(),
+		Widgets: []config.WidgetConfig{
+			{Type: "message", Enabled: true, Duration: config.Duration(50 * time.Millisecond), Text: "Hi"},
+		},
+	}
+	e := New(spy, cfg, nil)
+	e.rds = &mockRedis{}
+	e.nowFunc = func() time.Time {
+		return time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+
+	err := e.Run(ctx)
+	if err != nil {
+		t.Errorf("expected nil error, got %v", err)
+	}
+}
+
+func TestEngine_Run_SegmentWidget(t *testing.T) {
+	spy := &testutil.SpySegmentDisplay{}
+	cfg := &config.Config{
+		Display:    config.DisplayConfig{Type: config.DisplayTerminalSeg7},
+		Brightness: brightnessCfg(),
+		Widgets: []config.WidgetConfig{
+			{Type: "message", Enabled: true, Duration: config.Duration(50 * time.Millisecond), Text: "Hi"},
+		},
+	}
+	e := New(spy, cfg, nil)
+	e.nowFunc = func() time.Time {
+		return time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+
+	err := e.Run(ctx)
+	if err != nil {
+		t.Errorf("expected nil error, got %v", err)
+	}
+	if len(spy.Calls) == 0 {
+		t.Error("expected segment writes for segment display")
+	}
+}
+
+func TestEngine_Run_WidgetWithTimeout(t *testing.T) {
+	spy := &testutil.SpyDisplay{}
+	cfg := &config.Config{
+		Brightness: brightnessCfg(),
+		Widgets: []config.WidgetConfig{
+			{Type: "clock", Enabled: true, Duration: config.Duration(100 * time.Millisecond)},
+		},
+	}
+	e := New(spy, cfg, nil)
+	e.nowFunc = func() time.Time {
+		return time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+	defer cancel()
+
+	err := e.Run(ctx)
+	if err != nil {
+		t.Errorf("expected nil error, got %v", err)
 	}
 }

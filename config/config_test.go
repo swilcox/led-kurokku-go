@@ -2,6 +2,7 @@ package config_test
 
 import (
 	"encoding/json"
+	"os"
 	"testing"
 	"time"
 
@@ -119,5 +120,139 @@ func TestParse_InvalidDuration(t *testing.T) {
 	_, err := config.Parse(data)
 	if err == nil {
 		t.Error("expected error for invalid duration in widget")
+	}
+}
+
+func TestIsSegment(t *testing.T) {
+	tests := []struct {
+		dtype config.DisplayType
+		want  bool
+	}{
+		{config.DisplayTerminal, false},
+		{config.DisplayMAX7219, false},
+		{config.DisplayTM1637, true},
+		{config.DisplayHT16K33, true},
+		{config.DisplayTerminalSeg7, true},
+		{config.DisplayTerminalSeg14, true},
+		{"unknown", false},
+	}
+	for _, tc := range tests {
+		dc := config.DisplayConfig{Type: tc.dtype}
+		if got := dc.IsSegment(); got != tc.want {
+			t.Errorf("IsSegment(%q) = %v, want %v", tc.dtype, got, tc.want)
+		}
+	}
+}
+
+func TestLoad_ValidFile(t *testing.T) {
+	dir := t.TempDir()
+	path := dir + "/config.json"
+	data := []byte(`{"brightness": {"high": 10, "low": 2}, "widgets": []}`)
+	if err := os.WriteFile(path, data, 0644); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := config.Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Brightness.High != 10 {
+		t.Errorf("brightness.high = %d, want 10", cfg.Brightness.High)
+	}
+}
+
+func TestLoad_MissingFile(t *testing.T) {
+	_, err := config.Load("/nonexistent/path/config.json")
+	if err == nil {
+		t.Error("expected error for missing file")
+	}
+}
+
+func TestLoad_InvalidJSON(t *testing.T) {
+	dir := t.TempDir()
+	path := dir + "/bad.json"
+	os.WriteFile(path, []byte(`{bad`), 0644)
+	_, err := config.Load(path)
+	if err == nil {
+		t.Error("expected error for invalid JSON file")
+	}
+}
+
+func TestParse_DisplayConfig(t *testing.T) {
+	data := []byte(`{
+		"display": {"type": "tm1637", "clk_pin": "GPIO23", "dio_pin": "GPIO24"},
+		"brightness": {"high": 7},
+		"widgets": []
+	}`)
+	cfg, err := config.Parse(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Display.Type != config.DisplayTM1637 {
+		t.Errorf("display.type = %q, want %q", cfg.Display.Type, config.DisplayTM1637)
+	}
+	if cfg.Display.ClkPin != "GPIO23" {
+		t.Errorf("clk_pin = %q, want %q", cfg.Display.ClkPin, "GPIO23")
+	}
+	if cfg.Display.DioPin != "GPIO24" {
+		t.Errorf("dio_pin = %q, want %q", cfg.Display.DioPin, "GPIO24")
+	}
+}
+
+func TestParse_WidgetConfigFields(t *testing.T) {
+	f24 := true
+	data := []byte(`{
+		"brightness": {},
+		"widgets": [{
+			"type": "clock",
+			"enabled": true,
+			"duration": "30s",
+			"format_24h": true,
+			"cron": "*/5 * * * *"
+		}]
+	}`)
+	cfg, err := config.Parse(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := cfg.Widgets[0]
+	if w.Type != "clock" {
+		t.Errorf("type = %q, want %q", w.Type, "clock")
+	}
+	if w.Format24h == nil || *w.Format24h != f24 {
+		t.Error("expected format_24h = true")
+	}
+	if w.Cron != "*/5 * * * *" {
+		t.Errorf("cron = %q, want %q", w.Cron, "*/5 * * * *")
+	}
+}
+
+func TestParse_AlertConfig(t *testing.T) {
+	data := []byte(`{
+		"brightness": {},
+		"widgets": [{
+			"type": "alert",
+			"enabled": true,
+			"duration": "10s",
+			"alerts": [
+				{"id": "a1", "message": "Test alert", "priority": 5, "display_duration": "3s", "delete_after_display": true}
+			]
+		}]
+	}`)
+	cfg, err := config.Parse(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	alerts := cfg.Widgets[0].Alerts
+	if len(alerts) != 1 {
+		t.Fatalf("expected 1 alert, got %d", len(alerts))
+	}
+	if alerts[0].ID != "a1" {
+		t.Errorf("alert id = %q, want %q", alerts[0].ID, "a1")
+	}
+	if alerts[0].Priority != 5 {
+		t.Errorf("priority = %d, want 5", alerts[0].Priority)
+	}
+	if !alerts[0].DeleteAfterDisplay {
+		t.Error("expected delete_after_display = true")
 	}
 }

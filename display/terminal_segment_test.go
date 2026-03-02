@@ -97,3 +97,100 @@ func TestTerminalSegment_Clear(t *testing.T) {
 		t.Error("expected ANSI clear sequence")
 	}
 }
+
+func TestTerminalSegment_SetBrightness(t *testing.T) {
+	var buf bytes.Buffer
+	ts := NewTerminalSegment(&buf, Segment7)
+	ts.SetBrightness(10) // should be a no-op, no panic
+}
+
+func TestTerminalSegment_Close(t *testing.T) {
+	var buf bytes.Buffer
+	ts := NewTerminalSegment(&buf, Segment7)
+	if err := ts.Close(); err != nil {
+		t.Errorf("Close() returned error: %v", err)
+	}
+}
+
+func TestTerminalSegment7_AllSegmentsLit(t *testing.T) {
+	var buf bytes.Buffer
+	ts := NewTerminalSegment(&buf, Segment7)
+	// All 7 segments lit: 0x7F
+	segments := []uint16{0x7F, 0x7F, 0x7F, 0x7F}
+	ts.WriteSegments(segments, false)
+	output := buf.String()
+	// All segments lit should produce underscores (bars) and pipes (sides)
+	if !strings.Contains(output, "___") {
+		t.Error("expected bars for all-lit segments")
+	}
+	if !strings.Contains(output, "|") {
+		t.Error("expected pipes for all-lit segments")
+	}
+}
+
+func TestTerminalSegment7_NoSegmentsLit(t *testing.T) {
+	var buf bytes.Buffer
+	ts := NewTerminalSegment(&buf, Segment7)
+	segments := []uint16{0x00, 0x00, 0x00, 0x00}
+	ts.WriteSegments(segments, false)
+	output := buf.String()
+	// Should still have border but no segment characters
+	if !strings.Contains(output, "+") {
+		t.Error("expected border characters")
+	}
+}
+
+func TestTerminalSegment7_ColonOff(t *testing.T) {
+	var buf bytes.Buffer
+	ts := NewTerminalSegment(&buf, Segment7)
+	segments := []uint16{0x06, 0x5B, 0x4F, 0x3F}
+	ts.WriteSegments(segments, false)
+	output := buf.String()
+	if strings.Contains(output, "o") {
+		t.Error("expected no colon when colon=false")
+	}
+}
+
+func TestTerminalSegment14_AllSegmentsLit(t *testing.T) {
+	var buf bytes.Buffer
+	ts := NewTerminalSegment(&buf, Segment14)
+	// All 14 segments lit: 0x3FFF
+	segments := []uint16{0x3FFF, 0x3FFF, 0x3FFF, 0x3FFF}
+	ts.WriteSegments(segments, true)
+	output := buf.String()
+	if !strings.Contains(output, "\\") {
+		t.Error("expected backslash for diagonal segments")
+	}
+	if !strings.Contains(output, "/") {
+		t.Error("expected slash for diagonal segments")
+	}
+	if !strings.Contains(output, "o") {
+		t.Error("expected colon dots")
+	}
+}
+
+func TestTerminalSegment14_Diagonals(t *testing.T) {
+	var buf bytes.Buffer
+	ts := NewTerminalSegment(&buf, Segment14)
+	// H (bit 8) = top-left diagonal, J (bit 10) = top-right diagonal
+	segments := []uint16{0x0500}
+	ts.WriteSegments(segments, false)
+	output := buf.String()
+	if !strings.Contains(output, "\\") {
+		t.Error("expected backslash for H segment")
+	}
+	if !strings.Contains(output, "/") {
+		t.Error("expected slash for J segment")
+	}
+}
+
+func TestTerminalSegment_CursorHome(t *testing.T) {
+	var buf bytes.Buffer
+	ts := NewTerminalSegment(&buf, Segment7)
+	segments := []uint16{0x00}
+	ts.WriteSegments(segments, false)
+	output := buf.String()
+	if !strings.Contains(output, "\033[H") {
+		t.Error("expected cursor-home ANSI sequence")
+	}
+}
