@@ -4,7 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -30,10 +30,10 @@ func main() {
 	if rds != nil {
 		pingCtx, pingCancel := context.WithTimeout(context.Background(), 5*time.Second)
 		if err := rds.Ping(pingCtx); err != nil {
-			log.Printf("redis ping failed, running without redis: %v", err)
+			slog.Warn("redis ping failed, running without redis", "error", err)
 			rds = nil
 		} else {
-			log.Println("redis connected")
+			slog.Info("redis connected")
 			defer rds.Close()
 		}
 		pingCancel()
@@ -46,10 +46,10 @@ func main() {
 		redisCfg, found, fetchErr := rds.FetchConfig(loadCtx)
 		loadCancel()
 		if fetchErr != nil {
-			log.Printf("redis config fetch error, falling back to file: %v", fetchErr)
+			slog.Warn("redis config fetch error, falling back to file", "error", fetchErr)
 		} else if found {
 			cfg = redisCfg
-			log.Println("config loaded from Redis")
+			slog.Info("config loaded from redis")
 		}
 	}
 	if cfg == nil {
@@ -93,7 +93,7 @@ func main() {
 	var configCh <-chan struct{}
 	if rds != nil {
 		if ch, err := rds.SubscribeConfig(ctx); err != nil {
-			log.Printf("config subscribe failed: %v", err)
+			slog.Warn("config subscribe failed", "error", err)
 		} else {
 			configCh = ch
 		}
@@ -121,10 +121,10 @@ func main() {
 			newCfg, found, fetchErr := rds.FetchConfig(reloadCtx)
 			reloadCancel()
 			if fetchErr != nil {
-				log.Printf("config reload error: %v", fetchErr)
+				slog.Error("config reload failed", "error", fetchErr)
 			} else if found {
 				cfg = newCfg
-				log.Println("config reloaded from Redis")
+				slog.Info("config reloaded from redis")
 			}
 			// loop → restart engine with (possibly updated) cfg
 

@@ -2,7 +2,7 @@ package segment
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/swilcox/led-kurokku-go/config"
@@ -24,7 +24,7 @@ func (ra *RedisAlert) Name() string { return "segment-redis-alert" }
 func (ra *RedisAlert) Run(ctx context.Context, disp display.Display) error {
 	alerts, err := ra.Fetcher.FetchAlerts(ctx)
 	if err != nil {
-		log.Printf("redis alert fetch failed, using fallback: %v", err)
+		slog.Warn("redis alert fetch failed, using fallback", "error", err)
 		alerts = ra.Fallback
 	}
 
@@ -34,7 +34,7 @@ func (ra *RedisAlert) Run(ctx context.Context, disp display.Display) error {
 		Encoder:     ra.Encoder,
 		OnDelete: func(ctx context.Context, id string) {
 			if err := ra.Fetcher.DeleteAlert(ctx, id); err != nil {
-				log.Printf("redis alert delete %s: %v", id, err)
+				slog.Error("redis alert delete failed", "id", id, "error", err)
 			}
 		},
 	}

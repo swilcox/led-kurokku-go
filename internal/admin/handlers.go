@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
-	"log"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -20,7 +20,7 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 		"Instances": s.store.List(),
 	}
 	if err := renderPage(w, "templates/index.html", data); err != nil {
-		log.Printf("render index: %v", err)
+		slog.Error("render failed", "template", "index", "error", err)
 	}
 }
 
@@ -29,7 +29,7 @@ func (s *Server) handleInstanceNew(w http.ResponseWriter, r *http.Request) {
 		"ID": "", "Name": "", "Host": "", "Port": 6379, "Error": "",
 	}
 	if err := renderPartial(w, "instance_form", data); err != nil {
-		log.Printf("render instance_form: %v", err)
+		slog.Error("render failed", "template", "instance_form", "error", err)
 	}
 }
 
@@ -65,7 +65,7 @@ func (s *Server) handleInstanceCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := renderPartial(w, "instance_row", inst); err != nil {
-		log.Printf("render instance_row: %v", err)
+		slog.Error("render failed", "template", "instance_row", "error", err)
 	}
 }
 
@@ -79,7 +79,7 @@ func (s *Server) handleInstanceEdit(w http.ResponseWriter, r *http.Request) {
 		"ID": inst.ID, "Name": inst.Name, "Host": inst.Host, "Port": inst.Port, "Error": "",
 	}
 	if err := renderPartial(w, "instance_form", data); err != nil {
-		log.Printf("render instance_form: %v", err)
+		slog.Error("render failed", "template", "instance_form", "error", err)
 	}
 }
 
@@ -113,7 +113,7 @@ func (s *Server) handleInstanceUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := renderPartial(w, "instance_row", *inst); err != nil {
-		log.Printf("render instance_row: %v", err)
+		slog.Error("render failed", "template", "instance_row", "error", err)
 	}
 }
 
@@ -187,7 +187,7 @@ func (s *Server) handleConfigView(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := renderPage(w, "templates/config_view.html", data); err != nil {
-		log.Printf("render config_view: %v", err)
+		slog.Error("render failed", "template", "config_view", "error", err)
 	}
 }
 
@@ -250,7 +250,7 @@ func (s *Server) handleConfigEdit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := renderPage(w, "templates/config_edit.html", data); err != nil {
-		log.Printf("render config_edit: %v", err)
+		slog.Error("render failed", "template", "config_edit", "error", err)
 	}
 }
 
@@ -313,7 +313,7 @@ func (s *Server) handleConfigJSON(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if renderErr := renderPage(w, "templates/config_json.html", data); renderErr != nil {
-		log.Printf("render config_json: %v", renderErr)
+		slog.Error("render failed", "template", "config_json", "error", renderErr)
 	}
 }
 
@@ -361,7 +361,7 @@ func (s *Server) handleWidgetAdd(w http.ResponseWriter, r *http.Request) {
 		"Widget": wc,
 	}
 	if err := renderPartial(w, "widget_form", data); err != nil {
-		log.Printf("render widget_form: %v", err)
+		slog.Error("render failed", "template", "widget_form", "error", err)
 	}
 }
 
@@ -390,7 +390,7 @@ func (s *Server) handleWidgetForm(w http.ResponseWriter, r *http.Request) {
 		"Widget": wc,
 	}
 	if err := renderPartial(w, "widget_form", data); err != nil {
-		log.Printf("render widget_form: %v", err)
+		slog.Error("render failed", "template", "widget_form", "error", err)
 	}
 }
 
@@ -412,7 +412,7 @@ func (s *Server) handleAlertForm(w http.ResponseWriter, r *http.Request) {
 		"AlertID":  fmt.Sprintf("alert-%d", time.Now().UnixMilli()),
 	}
 	if err := renderPartial(w, "alert_form", data); err != nil {
-		log.Printf("render alert_form: %v", err)
+		slog.Error("render failed", "template", "alert_form", "error", err)
 	}
 }
 

@@ -3,7 +3,7 @@ package engine
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/nathan-osman/go-sunrise"
@@ -66,7 +66,7 @@ func (e *Engine) Run(ctx context.Context) error {
 		var err error
 		alertCh, err = e.rds.SubscribeAlerts(ctx)
 		if err != nil {
-			log.Printf("redis alert subscribe failed, interrupts disabled: %v", err)
+			slog.Warn("redis alert subscribe failed, interrupts disabled", "error", err)
 		}
 	}
 
@@ -78,7 +78,7 @@ func (e *Engine) Run(ctx context.Context) error {
 			if crons[i] != "" && !cronutil.MatchesNow(crons[i], e.now()) {
 				continue
 			}
-			log.Printf("widget: %s", w.Name())
+			slog.Info("widget", "name", w.Name())
 			var wctx context.Context
 			var cancel context.CancelFunc
 			if durations[i] > 0 {
@@ -123,7 +123,7 @@ func (e *Engine) runInterruptAlerts(ctx context.Context) {
 
 	alerts, err := e.rds.FetchAlerts(ctx)
 	if err != nil {
-		log.Printf("redis interrupt fetch failed: %v", err)
+		slog.Error("redis interrupt fetch failed", "error", err)
 		return
 	}
 	if len(alerts) == 0 {
@@ -141,7 +141,7 @@ func (e *Engine) runInterruptAlerts(ctx context.Context) {
 			Encoder:     e.segmentEncoder(),
 			OnDelete: func(ctx context.Context, id string) {
 				if err := e.rds.DeleteAlert(ctx, id); err != nil {
-					log.Printf("redis alert delete %s: %v", id, err)
+					slog.Error("redis alert delete failed", "id", id, "error", err)
 				}
 			},
 		}
@@ -152,7 +152,7 @@ func (e *Engine) runInterruptAlerts(ctx context.Context) {
 			ScrollSpeed: 50 * time.Millisecond,
 			OnDelete: func(ctx context.Context, id string) {
 				if err := e.rds.DeleteAlert(ctx, id); err != nil {
-					log.Printf("redis alert delete %s: %v", id, err)
+					slog.Error("redis alert delete failed", "id", id, "error", err)
 				}
 			},
 		}
@@ -300,7 +300,7 @@ func (e *Engine) buildWidgets() ([]widget.Widget, []time.Duration, []string) {
 				} else if factory, ok := e.segmentAnimationFactory(wc.AnimationType); ok {
 					w = factory()
 				} else {
-					log.Printf("unknown segment animation type: %s", wc.AnimationType)
+					slog.Warn("unknown segment animation type", "type", wc.AnimationType)
 					continue
 				}
 			} else {
@@ -312,13 +312,13 @@ func (e *Engine) buildWidgets() ([]widget.Widget, []time.Duration, []string) {
 				} else if factory, ok := animation.Registry[wc.AnimationType]; ok {
 					w = factory()
 				} else {
-					log.Printf("unknown animation type: %s", wc.AnimationType)
+					slog.Warn("unknown animation type", "type", wc.AnimationType)
 					continue
 				}
 			}
 
 		default:
-			log.Printf("unknown widget type: %s", wc.Type)
+			slog.Warn("unknown widget type", "type", wc.Type)
 			continue
 		}
 
@@ -357,13 +357,13 @@ func (e *Engine) updateBrightness() {
 func (e *Engine) updateBrightnessFromLocation(now time.Time, bc config.BrightnessConfig) {
 	loc := e.cfg.Location
 	if loc == nil {
-		log.Print("brightness: use_location=true but no location configured, defaulting to high brightness")
+		slog.Warn("brightness: use_location enabled but no location configured, defaulting to high")
 		e.disp.SetBrightness(bc.High)
 		return
 	}
 	tz, err := time.LoadLocation(loc.Timezone)
 	if err != nil {
-		log.Printf("brightness: invalid timezone %q: %v, defaulting to high brightness", loc.Timezone, err)
+		slog.Warn("brightness: invalid timezone, defaulting to high", "timezone", loc.Timezone, "error", err)
 		e.disp.SetBrightness(bc.High)
 		return
 	}

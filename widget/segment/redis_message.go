@@ -2,7 +2,7 @@ package segment
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/swilcox/led-kurokku-go/display"
@@ -27,7 +27,7 @@ func (rm *RedisMessage) Run(ctx context.Context, disp display.Display) error {
 	text := rm.FallbackText
 
 	if override, ok, err := rm.Fetcher.FetchMessageText(ctx, rm.Key); err != nil {
-		log.Printf("redis message fetch %s failed, using fallback: %v", rm.Key, err)
+		slog.Warn("redis message fetch failed, using fallback", "key", rm.Key, "error", err)
 	} else if ok {
 		text = override
 	}

@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 
 	"github.com/redis/go-redis/v9"
@@ -77,7 +77,7 @@ func (c *Client) FetchAlerts(ctx context.Context) ([]config.AlertConfig, error) 
 		}
 		var ac config.AlertConfig
 		if err := json.Unmarshal([]byte(raw), &ac); err != nil {
-			log.Printf("skipping malformed alert %s: %v", key, err)
+			slog.Warn("skipping malformed alert", "key", key, "error", err)
 			continue
 		}
 		// Derive ID from key suffix if not set in JSON.
@@ -133,7 +133,7 @@ func (c *Client) FetchConfig(ctx context.Context) (*config.Config, bool, error) 
 // config key is set or deleted.
 func (c *Client) SubscribeConfig(ctx context.Context) (<-chan struct{}, error) {
 	if err := c.rdb.ConfigSet(ctx, "notify-keyspace-events", "KEA").Err(); err != nil {
-		log.Printf("warning: could not set notify-keyspace-events: %v", err)
+		slog.Warn("could not set notify-keyspace-events", "error", err)
 	}
 
 	sub := c.rdb.PSubscribe(ctx, configKeyspacePattern)
@@ -170,7 +170,7 @@ func (c *Client) SubscribeConfig(ctx context.Context) (<-chan struct{}, error) {
 func (c *Client) SubscribeAlerts(ctx context.Context) (<-chan struct{}, error) {
 	// Enable keyspace notifications (KEA = Keyspace + Keyevent + All standard events).
 	if err := c.rdb.ConfigSet(ctx, "notify-keyspace-events", "KEA").Err(); err != nil {
-		log.Printf("warning: could not set notify-keyspace-events: %v", err)
+		slog.Warn("could not set notify-keyspace-events", "error", err)
 	}
 
 	sub := c.rdb.PSubscribe(ctx, alertKeyspacePattern)

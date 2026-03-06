@@ -1,7 +1,7 @@
 package cronutil
 
 import (
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/robfig/cron/v3"
@@ -12,7 +12,7 @@ import (
 func MatchesNow(expr string, t time.Time) bool {
 	sched, err := cron.ParseStandard(expr)
 	if err != nil {
-		log.Printf("invalid cron expression %q: %v", expr, err)
+		slog.Warn("invalid cron expression", "expr", expr, "error", err)
 		return false
 	}
 	minute := t.Truncate(time.Minute)
