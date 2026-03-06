@@ -102,3 +102,14 @@ func SaveConfigJSON(host string, port int, jsonStr string) error {
 	defer cancel()
 	return rdb.Set(ctx, configKey, jsonStr, 0).Err()
 }
+
+// SendAlert writes an alert JSON to kurokku:alert:<id> with an optional TTL.
+// A ttl of 0 means no expiration.
+func SendAlert(host string, port int, id, alertJSON string, ttl time.Duration) error {
+	rdb := dialRedis(host, port)
+	defer rdb.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	key := "kurokku:alert:" + id
+	return rdb.Set(ctx, key, alertJSON, ttl).Err()
+}

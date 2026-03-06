@@ -829,6 +829,67 @@ func TestEngine_RunInterruptAlerts_FetchError(t *testing.T) {
 	}
 }
 
+func TestBuildWidgets_SegmentAnimation14_AutoSelects(t *testing.T) {
+	spy := &testutil.SpySegmentDisplay{}
+	cfg := &config.Config{
+		Display:    config.DisplayConfig{Type: config.DisplayTerminalSeg14},
+		Brightness: brightnessCfg(),
+		Widgets: []config.WidgetConfig{
+			{Type: "animation", Enabled: true, AnimationType: "rain"},
+		},
+	}
+	e := New(spy, cfg, nil)
+	widgets, _, _ := e.buildWidgets()
+	if len(widgets) != 1 {
+		t.Fatalf("expected 1 widget, got %d", len(widgets))
+	}
+	// 14-seg display should get the Rain14 variant
+	if widgets[0].Name() != "segment-rain14" {
+		t.Errorf("widget name = %q, want %q (14-seg auto-selection)", widgets[0].Name(), "segment-rain14")
+	}
+}
+
+func TestBuildWidgets_SegmentAnimation7_UsesBaseRegistry(t *testing.T) {
+	spy := &testutil.SpySegmentDisplay{}
+	cfg := &config.Config{
+		Display:    config.DisplayConfig{Type: config.DisplayTerminalSeg7},
+		Brightness: brightnessCfg(),
+		Widgets: []config.WidgetConfig{
+			{Type: "animation", Enabled: true, AnimationType: "rain"},
+		},
+	}
+	e := New(spy, cfg, nil)
+	widgets, _, _ := e.buildWidgets()
+	if len(widgets) != 1 {
+		t.Fatalf("expected 1 widget, got %d", len(widgets))
+	}
+	// 7-seg display should get the base Rain variant
+	if widgets[0].Name() != "segment-rain" {
+		t.Errorf("widget name = %q, want %q (7-seg base registry)", widgets[0].Name(), "segment-rain")
+	}
+}
+
+func TestIs14Seg(t *testing.T) {
+	tests := []struct {
+		dtype config.DisplayType
+		want  bool
+	}{
+		{config.DisplayHT16K33, true},
+		{config.DisplayTerminalSeg14, true},
+		{config.DisplayTM1637, false},
+		{config.DisplayTerminalSeg7, false},
+		{config.DisplayTerminal, false},
+	}
+	for _, tc := range tests {
+		spy := &testutil.SpySegmentDisplay{}
+		cfg := &config.Config{Display: config.DisplayConfig{Type: tc.dtype}}
+		e := New(spy, cfg, nil)
+		if got := e.is14Seg(); got != tc.want {
+			t.Errorf("is14Seg(%q) = %v, want %v", tc.dtype, got, tc.want)
+		}
+	}
+}
+
 func TestEngine_Run_WidgetWithTimeout(t *testing.T) {
 	spy := &testutil.SpyDisplay{}
 	cfg := &config.Config{

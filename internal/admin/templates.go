@@ -52,6 +52,7 @@ func initTemplates() {
 		"templates/instance_row.html",
 		"templates/instance_form.html",
 		"templates/widget_form.html",
+		"templates/alert_form.html",
 	}
 
 	// Pages that extend layout.html (each defines {{define "content"}}).

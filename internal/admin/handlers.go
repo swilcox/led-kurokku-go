@@ -267,6 +267,10 @@ func (s *Server) handleConfigSave(w http.ResponseWriter, r *http.Request) {
 		renderErrorAlert(w, parseErr)
 		return
 	}
+	if err := cfg.Validate(); err != nil {
+		renderErrorAlert(w, fmt.Sprintf("Config validation error: %v", err))
+		return
+	}
 
 	if err := SaveConfig(inst.Host, inst.Port, cfg); err != nil {
 		renderErrorAlert(w, fmt.Sprintf("Failed to save: %v", err))
@@ -323,9 +327,14 @@ func (s *Server) handleConfigJSONSave(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	jsonStr := r.FormValue("json")
 
-	// Validate JSON.
-	if _, err := config.Parse([]byte(jsonStr)); err != nil {
+	// Validate JSON and config semantics.
+	cfg, err := config.Parse([]byte(jsonStr))
+	if err != nil {
 		renderErrorAlert(w, fmt.Sprintf("Invalid JSON: %v", err))
+		return
+	}
+	if err := cfg.Validate(); err != nil {
+		renderErrorAlert(w, fmt.Sprintf("Config validation error: %v", err))
 		return
 	}
 
@@ -388,6 +397,93 @@ func (s *Server) handleWidgetForm(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleWidgetRemove(w http.ResponseWriter, r *http.Request) {
 	// Return empty response so htmx removes the element.
 	w.WriteHeader(http.StatusOK)
+}
+
+// --- Alert handlers ---
+
+func (s *Server) handleAlertForm(w http.ResponseWriter, r *http.Request) {
+	inst := s.store.Get(r.PathValue("id"))
+	if inst == nil {
+		http.NotFound(w, r)
+		return
+	}
+	data := map[string]interface{}{
+		"Instance": inst,
+		"AlertID":  fmt.Sprintf("alert-%d", time.Now().UnixMilli()),
+	}
+	if err := renderPartial(w, "alert_form", data); err != nil {
+		log.Printf("render alert_form: %v", err)
+	}
+}
+
+func (s *Server) handleAlertSend(w http.ResponseWriter, r *http.Request) {
+	inst := s.store.Get(r.PathValue("id"))
+	if inst == nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	r.ParseForm()
+	message := strings.TrimSpace(r.FormValue("message"))
+	alertID := strings.TrimSpace(r.FormValue("alert_id"))
+	expirationStr := r.FormValue("expiration")
+	priorityStr := r.FormValue("priority")
+	deleteAfter := r.FormValue("delete_after_display") == "on"
+
+	if message == "" {
+		renderErrorAlert(w, "Message is required.")
+		return
+	}
+	if alertID == "" {
+		alertID = fmt.Sprintf("alert-%d", time.Now().UnixMilli())
+	}
+
+	priority, err := strconv.Atoi(priorityStr)
+	if err != nil || priority < 1 {
+		priority = 3
+	}
+
+	var ttl time.Duration
+	if expirationStr != "" {
+		secs, err := strconv.Atoi(expirationStr)
+		if err != nil || secs < 0 {
+			renderErrorAlert(w, "Expiration must be a non-negative integer (seconds).")
+			return
+		}
+		if secs > 0 {
+			ttl = time.Duration(secs) * time.Second
+		}
+	}
+
+	// Estimate display duration: ~0.4s per character, minimum 3s.
+	displaySecs := float64(len(message)) * 0.4
+	if displaySecs < 3 {
+		displaySecs = 3
+	}
+	displayDuration := fmt.Sprintf("%.1fs", displaySecs)
+
+	alert := map[string]interface{}{
+		"message":              message,
+		"priority":             priority,
+		"display_duration":     displayDuration,
+		"delete_after_display": deleteAfter,
+	}
+	alertJSON, err := json.Marshal(alert)
+	if err != nil {
+		renderErrorAlert(w, fmt.Sprintf("Failed to build alert JSON: %v", err))
+		return
+	}
+
+	if err := SendAlert(inst.Host, inst.Port, alertID, string(alertJSON), ttl); err != nil {
+		renderErrorAlert(w, fmt.Sprintf("Failed to send alert: %v", err))
+		return
+	}
+
+	fmt.Fprintf(w, `<div class="alert alert-success">Alert sent: <strong>%s</strong> (key: kurokku:alert:%s, priority: %d, display: %s)</div>`,
+		template.HTMLEscapeString(message),
+		template.HTMLEscapeString(alertID),
+		priority,
+		template.HTMLEscapeString(displayDuration))
 }
 
 // --- Helpers ---

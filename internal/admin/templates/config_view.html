@@ -6,10 +6,16 @@
 <div class="header">
   <h1>{{.Instance.Name}} — Configuration</h1>
   <div>
+    <button class="btn btn-sm"
+            hx-get="/instances/{{.Instance.ID}}/alert"
+            hx-target="#alert-slot"
+            hx-swap="innerHTML">Send Alert</button>
     <a href="/instances/{{.Instance.ID}}/config/json" class="btn btn-sm">Raw JSON</a>
     <a href="/instances/{{.Instance.ID}}/config/edit" class="btn btn-primary">Edit</a>
   </div>
 </div>
+
+<div id="alert-slot"></div>
 
 {{if .Error}}
 <div class="alert alert-error">{{.Error}}</div>

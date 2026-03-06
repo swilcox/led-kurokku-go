@@ -69,6 +69,11 @@ func main() {
 		cfg.Display.Type = config.DisplayTerminal
 	}
 
+	if err := cfg.Validate(); err != nil {
+		fmt.Fprintf(os.Stderr, "config validation error: %v\n", err)
+		os.Exit(1)
+	}
+
 	disp, err := createDisplay(cfg.Display)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)

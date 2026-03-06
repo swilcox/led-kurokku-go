@@ -162,3 +162,17 @@ func TestSegmentRegistry(t *testing.T) {
 		}
 	}
 }
+
+func TestSegmentRegistry14(t *testing.T) {
+	for _, name := range []string{"rain", "static", "scanner", "race"} {
+		factory, ok := segment.Registry14[name]
+		if !ok {
+			t.Errorf("Registry14 missing %q", name)
+			continue
+		}
+		w := factory()
+		if w == nil {
+			t.Errorf("Registry14[%q] returned nil", name)
+		}
+	}
+}

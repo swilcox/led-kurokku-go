@@ -160,6 +160,27 @@ func (e *Engine) runInterruptAlerts(ctx context.Context) {
 	}
 }
 
+// segmentAnimationFactory returns the appropriate animation constructor for the
+// current display type. For 14-segment displays it prefers Registry14 variants,
+// falling back to the base Registry.
+func (e *Engine) segmentAnimationFactory(name string) (func() widget.Widget, bool) {
+	if e.is14Seg() {
+		if factory, ok := segment.Registry14[name]; ok {
+			return factory, true
+		}
+	}
+	factory, ok := segment.Registry[name]
+	return factory, ok
+}
+
+func (e *Engine) is14Seg() bool {
+	switch e.cfg.Display.Type {
+	case config.DisplayHT16K33, config.DisplayTerminalSeg14:
+		return true
+	}
+	return false
+}
+
 func (e *Engine) segmentEncoder() segfont.Encoder {
 	switch e.cfg.Display.Type {
 	case config.DisplayTM1637, config.DisplayTerminalSeg7:
@@ -276,7 +297,7 @@ func (e *Engine) buildWidgets() ([]widget.Widget, []time.Duration, []string) {
 						Frames:        wc.SegmentFrames,
 						FrameDuration: wc.FrameDuration.Unwrap(),
 					}
-				} else if factory, ok := segment.Registry[wc.AnimationType]; ok {
+				} else if factory, ok := e.segmentAnimationFactory(wc.AnimationType); ok {
 					w = factory()
 				} else {
 					log.Printf("unknown segment animation type: %s", wc.AnimationType)

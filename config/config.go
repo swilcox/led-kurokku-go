@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"time"
+
+	"github.com/robfig/cron/v3"
 )
 
 // Duration wraps time.Duration for JSON string marshaling ("500ms", "5s").
@@ -129,6 +131,73 @@ type WidgetConfig struct {
 	Frames        []FrameConfig       `json:"frames,omitempty"`
 	SegmentFrames []SegmentFrameConfig `json:"segment_frames,omitempty"`
 	FrameDuration Duration            `json:"frame_duration,omitempty"`
+}
+
+// validDisplayTypes enumerates all recognized display types.
+var validDisplayTypes = map[DisplayType]bool{
+	DisplayTerminal:      true,
+	DisplayMAX7219:       true,
+	DisplayTM1637:        true,
+	DisplayHT16K33:       true,
+	DisplayTerminalSeg7:  true,
+	DisplayTerminalSeg14: true,
+}
+
+// validWidgetTypes enumerates all recognized widget types.
+var validWidgetTypes = map[string]bool{
+	"clock":     true,
+	"message":   true,
+	"alert":     true,
+	"animation": true,
+}
+
+// Validate checks the config for semantic errors.
+func (c *Config) Validate() error {
+	// Display type.
+	if c.Display.Type != "" && !validDisplayTypes[c.Display.Type] {
+		return fmt.Errorf("unknown display type: %q", c.Display.Type)
+	}
+
+	// Brightness range.
+	if c.Brightness.High > 15 {
+		return fmt.Errorf("brightness.high must be 0-15, got %d", c.Brightness.High)
+	}
+	if c.Brightness.Low > 15 {
+		return fmt.Errorf("brightness.low must be 0-15, got %d", c.Brightness.Low)
+	}
+
+	// Day start/end format.
+	if c.Brightness.DayStart != "" {
+		if _, err := time.Parse("15:04", c.Brightness.DayStart); err != nil {
+			return fmt.Errorf("brightness.day_start must be HH:MM, got %q", c.Brightness.DayStart)
+		}
+	}
+	if c.Brightness.DayEnd != "" {
+		if _, err := time.Parse("15:04", c.Brightness.DayEnd); err != nil {
+			return fmt.Errorf("brightness.day_end must be HH:MM, got %q", c.Brightness.DayEnd)
+		}
+	}
+
+	// Location timezone.
+	if c.Location != nil && c.Location.Timezone != "" {
+		if _, err := time.LoadLocation(c.Location.Timezone); err != nil {
+			return fmt.Errorf("location.timezone: %w", err)
+		}
+	}
+
+	// Widgets.
+	for i, w := range c.Widgets {
+		if !validWidgetTypes[w.Type] {
+			return fmt.Errorf("widget #%d: unknown type %q", i+1, w.Type)
+		}
+		if w.Cron != "" {
+			if _, err := cron.ParseStandard(w.Cron); err != nil {
+				return fmt.Errorf("widget #%d: invalid cron expression %q: %w", i+1, w.Cron, err)
+			}
+		}
+	}
+
+	return nil
 }
 
 // Parse parses JSON config data.

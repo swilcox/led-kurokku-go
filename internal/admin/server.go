@@ -36,6 +36,8 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("POST /instances/{id}/config", s.handleConfigSave)
 	s.mux.HandleFunc("GET /instances/{id}/config/json", s.handleConfigJSON)
 	s.mux.HandleFunc("POST /instances/{id}/config/json", s.handleConfigJSONSave)
+	s.mux.HandleFunc("GET /instances/{id}/alert", s.handleAlertForm)
+	s.mux.HandleFunc("POST /instances/{id}/alert", s.handleAlertSend)
 	s.mux.HandleFunc("POST /instances/{id}/config/widgets/add", s.handleWidgetAdd)
 	s.mux.HandleFunc("GET /config/widgets/form", s.handleWidgetForm)
 	s.mux.HandleFunc("DELETE /instances/{id}/config/widgets/{idx}", s.handleWidgetRemove)

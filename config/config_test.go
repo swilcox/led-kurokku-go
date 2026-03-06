@@ -226,6 +226,88 @@ func TestParse_WidgetConfigFields(t *testing.T) {
 	}
 }
 
+func TestValidate_Valid(t *testing.T) {
+	cfg := &config.Config{
+		Display:    config.DisplayConfig{Type: config.DisplayTerminal},
+		Brightness: config.BrightnessConfig{High: 12, Low: 2, DayStart: "07:00", DayEnd: "22:00"},
+		Widgets: []config.WidgetConfig{
+			{Type: "clock", Enabled: true},
+			{Type: "message", Enabled: true, Cron: "*/5 * * * *"},
+		},
+	}
+	if err := cfg.Validate(); err != nil {
+		t.Errorf("expected valid config, got: %v", err)
+	}
+}
+
+func TestValidate_BadDisplayType(t *testing.T) {
+	cfg := &config.Config{Display: config.DisplayConfig{Type: "nonexistent"}}
+	if err := cfg.Validate(); err == nil {
+		t.Error("expected error for unknown display type")
+	}
+}
+
+func TestValidate_BrightnessOutOfRange(t *testing.T) {
+	cfg := &config.Config{
+		Display:    config.DisplayConfig{Type: config.DisplayTerminal},
+		Brightness: config.BrightnessConfig{High: 20},
+	}
+	if err := cfg.Validate(); err == nil {
+		t.Error("expected error for brightness > 15")
+	}
+}
+
+func TestValidate_BadDayStart(t *testing.T) {
+	cfg := &config.Config{
+		Display:    config.DisplayConfig{Type: config.DisplayTerminal},
+		Brightness: config.BrightnessConfig{DayStart: "7am"},
+	}
+	if err := cfg.Validate(); err == nil {
+		t.Error("expected error for bad day_start format")
+	}
+}
+
+func TestValidate_BadTimezone(t *testing.T) {
+	cfg := &config.Config{
+		Display: config.DisplayConfig{Type: config.DisplayTerminal},
+		Location: &config.LocationConfig{
+			Lat: 36.0, Lon: -86.0, Timezone: "Not/A/Zone",
+		},
+	}
+	if err := cfg.Validate(); err == nil {
+		t.Error("expected error for invalid timezone")
+	}
+}
+
+func TestValidate_BadWidgetType(t *testing.T) {
+	cfg := &config.Config{
+		Display: config.DisplayConfig{Type: config.DisplayTerminal},
+		Widgets: []config.WidgetConfig{{Type: "bogus", Enabled: true}},
+	}
+	if err := cfg.Validate(); err == nil {
+		t.Error("expected error for unknown widget type")
+	}
+}
+
+func TestValidate_BadCron(t *testing.T) {
+	cfg := &config.Config{
+		Display: config.DisplayConfig{Type: config.DisplayTerminal},
+		Widgets: []config.WidgetConfig{{Type: "clock", Cron: "not a cron"}},
+	}
+	if err := cfg.Validate(); err == nil {
+		t.Error("expected error for invalid cron expression")
+	}
+}
+
+func TestValidate_EmptyDisplayType(t *testing.T) {
+	cfg := &config.Config{
+		Brightness: config.BrightnessConfig{High: 10, Low: 1},
+	}
+	if err := cfg.Validate(); err != nil {
+		t.Errorf("empty display type should be valid (defaults at runtime), got: %v", err)
+	}
+}
+
 func TestParse_AlertConfig(t *testing.T) {
 	data := []byte(`{
 		"brightness": {},

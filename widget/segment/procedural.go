@@ -9,12 +9,21 @@ import (
 	"github.com/swilcox/led-kurokku-go/widget"
 )
 
-// Registry maps segment animation type names to constructors.
+// Registry maps segment animation type names to constructors (7-segment).
 var Registry = map[string]func() widget.Widget{
 	"rain":    func() widget.Widget { return &Rain{} },
 	"static":  func() widget.Widget { return &Static{} },
 	"scanner": func() widget.Widget { return &Scanner{} },
 	"race":    func() widget.Widget { return &Race{} },
+}
+
+// Registry14 maps segment animation type names to 14-segment-specific constructors.
+// The engine uses this for 14-segment displays, falling back to Registry.
+var Registry14 = map[string]func() widget.Widget{
+	"rain":    func() widget.Widget { return &Rain14{} },
+	"static":  func() widget.Widget { return &Static14{} },
+	"scanner": func() widget.Widget { return &Scanner14{} },
+	"race":    func() widget.Widget { return &Race14{} },
 }
 
 // Rain simulates segments lighting up and "falling" through each digit.

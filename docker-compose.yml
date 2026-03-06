@@ -1,6 +1,7 @@
 services:
   valkey:
     image: valkey/valkey:8
+    restart: unless-stopped
     ports:
       - "6379:6379"
     volumes:
@@ -8,6 +9,7 @@ services:
 
   kurokku:
     image: ghcr.io/swilcox/led-kurokku:latest
+    restart: unless-stopped
     privileged: true
     user: root
     cap_add:
@@ -28,6 +30,7 @@ services:
 
   kurokku-admin:
     image: ghcr.io/swilcox/led-kurokku-admin:latest
+    restart: unless-stopped
     depends_on:
       - valkey
     environment:

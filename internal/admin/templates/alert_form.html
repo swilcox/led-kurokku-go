@@ -1,0 +1,44 @@
+{{define "alert_form"}}
+<div class="card" id="alert-form-container">
+  <div class="config-section">
+    <h3>Send Alert</h3>
+    <form hx-post="/instances/{{.Instance.ID}}/alert"
+          hx-target="#alert-feedback"
+          hx-swap="innerHTML">
+      <div class="form-group">
+        <label for="message">Message</label>
+        <textarea id="message" name="message" rows="3" required placeholder="Alert message text..."></textarea>
+      </div>
+      <div class="form-group">
+        <label for="alert_id">Alert ID</label>
+        <input type="text" id="alert_id" name="alert_id" value="{{.AlertID}}">
+      </div>
+      <div class="form-group">
+        <label for="priority">Priority (lower = more urgent)</label>
+        <select id="priority" name="priority">
+          <option value="1">1 — Critical</option>
+          <option value="2">2 — High</option>
+          <option value="3" selected>3 — Normal</option>
+          <option value="5">5 — Low</option>
+          <option value="10">10 — Info</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="expiration">Expiration (seconds, 0 = no expiry)</label>
+        <input type="number" id="expiration" name="expiration" value="0" min="0">
+      </div>
+      <div class="form-group">
+        <label>
+          <input type="checkbox" name="delete_after_display"> Delete after display
+        </label>
+      </div>
+      <div style="display:flex; gap:0.5rem; margin-top:1rem;">
+        <button type="submit" class="btn btn-primary">Send Alert</button>
+        <button type="button" class="btn btn-sm"
+                onclick="document.getElementById('alert-form-container').remove()">Cancel</button>
+      </div>
+    </form>
+    <div id="alert-feedback" style="margin-top:1rem;"></div>
+  </div>
+</div>
+{{end}}

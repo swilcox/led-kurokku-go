@@ -40,10 +40,10 @@ make build-pi
 # 14-segment — terminal emulator
 ./kurokku -display terminal_seg14
 
-# TM1637 hardware (requires GPIO pins in config)
+# TM1637 hardware (defaults to GPIO23/GPIO24)
 ./kurokku -display tm1637
 
-# HT16K33 hardware (requires I2C config)
+# HT16K33 hardware (defaults to I2C address 0x70)
 ./kurokku -display ht16k33
 
 # Custom config file
@@ -207,7 +207,7 @@ The `display` block selects the hardware backend and its settings:
 
 | Type        | Pixel | Segment | Description |
 |-------------|:-----:|:-------:|-------------|
-| `clock`     | Yes | Yes | Time display with blinking colon. Set `format_24h` for 24-hour format. 12h PM uses double-blink pattern. |
+| `clock`     | Yes | Yes | Time display with blinking colon. `format_24h` defaults to `true` (24-hour); set to `false` for 12-hour. 12h PM uses double-blink pattern. |
 | `message`   | Yes | Yes | Static or scrolling text. Supports `dynamic_source` for Redis-backed text. Pixel: 50ms scroll speed. Segment: 300ms per character. |
 | `alert`     | Yes | Yes | Displays prioritized alerts. With Redis, fetches from `kurokku:alert:*` keys; without, uses the `alerts` array. |
 | `animation` | Yes | Yes | Pixel: procedural (`rain`, `static`, `bounce`, `sine`, `scanner`, `life`) or custom `frames`. Segment: procedural (`rain`, `static`, `scanner`, `race`) or custom `segment_frames`. |
@@ -272,6 +272,21 @@ Redis provides dynamic alerts and message text at runtime. Everything works with
 | `REDIS_PORT` | Redis port. Defaults to `6379`. |
 
 If none are set, Redis is disabled entirely.
+
+### Config from Redis
+
+The app can load its entire configuration from a `kurokku:config` Redis key. On startup it checks Redis first and falls back to the JSON config file. It also subscribes to keyspace notifications on this key — when the config is updated in Redis, the engine automatically restarts with the new configuration (hot-reload).
+
+```bash
+# Store config in Redis
+redis-cli SET kurokku:config "$(cat config.json)"
+
+# Update config (triggers hot-reload)
+redis-cli SET kurokku:config "$(cat new-config.json)"
+
+# Remove (app will use file config on next restart)
+redis-cli DEL kurokku:config
+```
 
 ### Alert Keys
 
@@ -379,4 +394,27 @@ widget/
     animation.go              Segment frame animation
     redis_alert.go            Redis-backed segment alert
     redis_message.go          Redis-backed segment message
+```
+
+## Docker Deployment
+
+A `docker-compose.yml` is provided for running on a Raspberry Pi. It includes the kurokku display driver, a Valkey (Redis-compatible) instance, and an optional admin UI.
+
+### Host Setup
+
+Before starting the containers, configure the host Pi to allow memory overcommit (required by Valkey for background saves):
+
+```bash
+sudo sysctl vm.overcommit_memory=1
+echo "vm.overcommit_memory=1" | sudo tee -a /etc/sysctl.conf
+```
+
+### Running
+
+```bash
+# Start kurokku + valkey
+docker compose up -d
+
+# Start with the admin UI as well
+docker compose --profile admin up -d
 ```
