@@ -1,6 +1,8 @@
 package display
 
 import (
+	"log/slog"
+
 	"github.com/swilcox/led-kurokku-go/spi"
 )
 
@@ -98,7 +100,10 @@ func (m *MAX7219) WriteFramebuffer(buf []byte) {
 			}
 			packet[idx+1] = rowByte
 		}
-		m.dev.Tx(packet)
+		if err := m.dev.Tx(packet); err != nil {
+			slog.Error("max7219 write framebuffer failed", "row", row, "error", err)
+			return
+		}
 	}
 }
 
@@ -115,5 +120,7 @@ func (m *MAX7219) writeAll(reg, value byte) {
 		packet[i*2] = reg
 		packet[i*2+1] = value
 	}
-	m.dev.Tx(packet)
+	if err := m.dev.Tx(packet); err != nil {
+		slog.Error("max7219 write failed", "reg", reg, "error", err)
+	}
 }

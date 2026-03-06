@@ -3,6 +3,7 @@ package display
 import (
 	"encoding/binary"
 	"fmt"
+	"log/slog"
 
 	"periph.io/x/conn/v3/i2c"
 	"periph.io/x/conn/v3/i2c/i2creg"
@@ -80,7 +81,9 @@ func (h *HT16K33) SetBrightness(level byte) {
 	if level > 15 {
 		level = 15
 	}
-	h.dev.Tx([]byte{ht16k33CmdBrightness | level}, nil)
+	if err := h.dev.Tx([]byte{ht16k33CmdBrightness | level}, nil); err != nil {
+		slog.Error("ht16k33 set brightness failed", "level", level, "error", err)
+	}
 }
 
 func (h *HT16K33) WriteSegments(segments []uint16, colon bool) {
@@ -101,7 +104,10 @@ func (h *HT16K33) WriteSegments(segments []uint16, colon bool) {
 		data := make([]byte, 9)
 		data[0] = 0x00 // starting register address
 		copy(data[1:], buf[:])
-		h.dev.Tx(data, nil)
+		if err := h.dev.Tx(data, nil); err != nil {
+			slog.Error("ht16k33 write segments failed", "error", err)
+			return
+		}
 		h.prev = buf
 	}
 }
