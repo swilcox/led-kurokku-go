@@ -117,7 +117,7 @@ Widgets are processed in array order. Each has a `type` and shared fields, plus 
 |-------|------|---------|-------------|
 | `text` | string | — | Display text. Fallback when `dynamic_source` is absent or unavailable |
 | `dynamic_source` | string | — | Redis key for dynamic text override |
-| `scroll_speed` | duration | `"50ms"` (pixel) / `"300ms"` (segment) | Time between scroll steps |
+| `scroll_speed` | duration | `"50ms"` (pixel) / `"100ms"` (segment) | Time between scroll steps |
 | `repeats` | int | `1` | Number of scroll cycles. `0` or negative = infinite |
 | `sleep_between` | duration | `"0s"` | Pause between scroll repetitions |
 

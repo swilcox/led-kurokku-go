@@ -137,7 +137,7 @@ func (e *Engine) runInterruptAlerts(ctx context.Context) {
 	if e.cfg.Display.IsSegment() {
 		a := &segment.Alert{
 			Alerts:      alerts,
-			ScrollSpeed: 300 * time.Millisecond,
+			ScrollSpeed: 100 * time.Millisecond,
 			Encoder:     e.segmentEncoder(),
 			OnDelete: func(ctx context.Context, id string) {
 				if err := e.rds.DeleteAlert(ctx, id); err != nil {
