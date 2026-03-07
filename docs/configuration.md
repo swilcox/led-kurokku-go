@@ -52,6 +52,7 @@ graph TD
 | `i2c_addr` | int | No | HT16K33 I2C address. Default: `0x70` (112) |
 | `i2c_bus` | string | No | HT16K33 I2C bus name. Empty for default |
 | `layout` | string | No | HT16K33 digit layout: `"sequential"` (default) or `"adafruit"` |
+| `default_scroll_speed` | duration | No | Default scroll speed for widgets. Fallback: `"50ms"` (pixel) / `"150ms"` (segment) |
 
 ### Display Types
 
@@ -117,7 +118,7 @@ Widgets are processed in array order. Each has a `type` and shared fields, plus 
 |-------|------|---------|-------------|
 | `text` | string | — | Display text. Fallback when `dynamic_source` is absent or unavailable |
 | `dynamic_source` | string | — | Redis key for dynamic text override |
-| `scroll_speed` | duration | `"50ms"` (pixel) / `"200ms"` (segment) | Time between scroll steps |
+| `scroll_speed` | duration | `"50ms"` (pixel) / `"150ms"` (segment) | Time between scroll steps |
 | `repeats` | int | `1` | Number of scroll cycles. `0` or negative = infinite |
 | `sleep_between` | duration | `"0s"` | Pause between scroll repetitions |
 

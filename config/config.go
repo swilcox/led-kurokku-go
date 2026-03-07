@@ -59,7 +59,8 @@ type DisplayConfig struct {
 	DioPin  string      `json:"dio_pin,omitempty"`  // TM1637 GPIO data pin
 	I2CAddr uint16      `json:"i2c_addr,omitempty"` // HT16K33, default 0x70
 	I2CBus  string      `json:"i2c_bus,omitempty"`  // HT16K33 I2C bus
-	Layout  string      `json:"layout,omitempty"`   // "sequential" or "adafruit"
+	Layout             string      `json:"layout,omitempty"`               // "sequential" or "adafruit"
+	DefaultScrollSpeed Duration    `json:"default_scroll_speed,omitempty"` // per-display scroll speed default
 }
 
 // IsSegment returns true if the display type is a segment display.

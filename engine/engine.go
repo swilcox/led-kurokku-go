@@ -134,10 +134,11 @@ func (e *Engine) runInterruptAlerts(ctx context.Context) {
 	alertCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
+	scrollSpeed := e.cfg.Display.DefaultScrollSpeed.Unwrap()
 	if e.cfg.Display.IsSegment() {
 		a := &segment.Alert{
 			Alerts:      alerts,
-			ScrollSpeed: 200 * time.Millisecond,
+			ScrollSpeed: scrollSpeed,
 			Encoder:     e.segmentEncoder(),
 			OnDelete: func(ctx context.Context, id string) {
 				if err := e.rds.DeleteAlert(ctx, id); err != nil {
@@ -149,7 +150,7 @@ func (e *Engine) runInterruptAlerts(ctx context.Context) {
 	} else {
 		a := &widget.Alert{
 			Alerts:      alerts,
-			ScrollSpeed: 50 * time.Millisecond,
+			ScrollSpeed: scrollSpeed,
 			OnDelete: func(ctx context.Context, id string) {
 				if err := e.rds.DeleteAlert(ctx, id); err != nil {
 					slog.Error("redis alert delete failed", "id", id, "error", err)
@@ -190,6 +191,14 @@ func (e *Engine) segmentEncoder() segfont.Encoder {
 	}
 }
 
+// scrollSpeed returns the widget's scroll speed, falling back to the display default.
+func (e *Engine) scrollSpeed(wc config.WidgetConfig) time.Duration {
+	if s := wc.ScrollSpeed.Unwrap(); s != 0 {
+		return s
+	}
+	return e.cfg.Display.DefaultScrollSpeed.Unwrap()
+}
+
 func (e *Engine) buildWidgets() ([]widget.Widget, []time.Duration, []string) {
 	var widgets []widget.Widget
 	var durations []time.Duration
@@ -225,7 +234,7 @@ func (e *Engine) buildWidgets() ([]widget.Widget, []time.Duration, []string) {
 						Fetcher:      e.rds,
 						Key:          wc.DynamicSource,
 						FallbackText: wc.Text,
-						ScrollSpeed:  wc.ScrollSpeed.Unwrap(),
+						ScrollSpeed:  e.scrollSpeed(wc),
 						Repeats:      repeats,
 						SleepBetween: wc.SleepBetween.Unwrap(),
 						Encoder:      e.segmentEncoder(),
@@ -233,7 +242,7 @@ func (e *Engine) buildWidgets() ([]widget.Widget, []time.Duration, []string) {
 				} else {
 					w = &segment.Message{
 						Text:         wc.Text,
-						ScrollSpeed:  wc.ScrollSpeed.Unwrap(),
+						ScrollSpeed:  e.scrollSpeed(wc),
 						Repeats:      repeats,
 						SleepBetween: wc.SleepBetween.Unwrap(),
 						Encoder:      e.segmentEncoder(),
@@ -245,14 +254,14 @@ func (e *Engine) buildWidgets() ([]widget.Widget, []time.Duration, []string) {
 						Fetcher:      e.rds,
 						Key:          wc.DynamicSource,
 						FallbackText: wc.Text,
-						ScrollSpeed:  wc.ScrollSpeed.Unwrap(),
+						ScrollSpeed:  e.scrollSpeed(wc),
 						Repeats:      repeats,
 						SleepBetween: wc.SleepBetween.Unwrap(),
 					}
 				} else {
 					w = &widget.Message{
 						Text:         wc.Text,
-						ScrollSpeed:  wc.ScrollSpeed.Unwrap(),
+						ScrollSpeed:  e.scrollSpeed(wc),
 						Repeats:      repeats,
 						SleepBetween: wc.SleepBetween.Unwrap(),
 					}
@@ -265,13 +274,13 @@ func (e *Engine) buildWidgets() ([]widget.Widget, []time.Duration, []string) {
 					w = &segment.RedisAlert{
 						Fetcher:     e.rds,
 						Fallback:    wc.Alerts,
-						ScrollSpeed: wc.ScrollSpeed.Unwrap(),
+						ScrollSpeed: e.scrollSpeed(wc),
 						Encoder:     e.segmentEncoder(),
 					}
 				} else {
 					w = &segment.Alert{
 						Alerts:      wc.Alerts,
-						ScrollSpeed: wc.ScrollSpeed.Unwrap(),
+						ScrollSpeed: e.scrollSpeed(wc),
 						Encoder:     e.segmentEncoder(),
 					}
 				}
@@ -280,12 +289,12 @@ func (e *Engine) buildWidgets() ([]widget.Widget, []time.Duration, []string) {
 					w = &widget.RedisAlert{
 						Fetcher:     e.rds,
 						Fallback:    wc.Alerts,
-						ScrollSpeed: wc.ScrollSpeed.Unwrap(),
+						ScrollSpeed: e.scrollSpeed(wc),
 					}
 				} else {
 					w = &widget.Alert{
 						Alerts:      wc.Alerts,
-						ScrollSpeed: wc.ScrollSpeed.Unwrap(),
+						ScrollSpeed: e.scrollSpeed(wc),
 					}
 				}
 			}

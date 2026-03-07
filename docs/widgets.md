@@ -126,7 +126,7 @@ Displays static or scrolling text.
 |-----------|-------|---------|
 | Text fits display | Centered, hold until context done | Centered with blank padding, hold |
 | Text too wide | Scroll with padding on both sides | Character-by-character scroll with padding |
-| Default scroll speed | 50ms per pixel | 200ms per character |
+| Default scroll speed | 50ms per pixel | 150ms per character |
 
 ### Scrolling Algorithm
 
