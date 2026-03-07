@@ -15,12 +15,17 @@ const (
 	tm1637Brightness = 0x88
 )
 
+// gpioPin is the subset of gpio.PinIO used by TM1637.
+type gpioPin interface {
+	Out(l gpio.Level) error
+}
+
 // TM1637 drives a 4-digit 7-segment display via bit-bang protocol.
 type TM1637 struct {
 	clkName string
 	dioName string
-	clk     gpio.PinIO
-	dio     gpio.PinIO
+	clk     gpioPin
+	dio     gpioPin
 	bright  byte
 }
 

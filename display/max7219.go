@@ -18,9 +18,15 @@ const (
 
 const numDevices = 4 // 4-in-1 module
 
+// spiDev is the subset of spi.Device used by MAX7219.
+type spiDev interface {
+	Tx([]byte) error
+	Close() error
+}
+
 // MAX7219 drives a 4-in-1 MAX7219 32x8 LED matrix over SPI.
 type MAX7219 struct {
-	dev *spi.Device
+	dev spiDev
 }
 
 // NewMAX7219 creates a new MAX7219 display using the given SPI bus name.

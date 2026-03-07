@@ -16,13 +16,18 @@ const (
 	ht16k33CmdBrightness = 0xE0
 )
 
+// i2cTxer is the subset of i2c.Dev used by HT16K33.
+type i2cTxer interface {
+	Tx(w, r []byte) error
+}
+
 // HT16K33 drives a 4-digit 14-segment display over I2C.
 type HT16K33 struct {
 	busName string
 	addr    uint16
 	layout  string
 	bus     i2c.BusCloser
-	dev     *i2c.Dev
+	dev     i2cTxer
 	prev    [8]byte
 }
 
@@ -125,7 +130,7 @@ func (h *HT16K33) digitPosition(digit int) int {
 		case 2:
 			return 3
 		case 3:
-			return 4 // use position 3 since we only have 4 uint16 slots
+			return 3
 		}
 	}
 	return digit
