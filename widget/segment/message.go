@@ -48,7 +48,7 @@ func (m *Message) Run(ctx context.Context, disp display.Display) error {
 	// Scrolling text
 	speed := m.ScrollSpeed
 	if speed == 0 {
-		speed = 100 * time.Millisecond
+		speed = 200 * time.Millisecond
 	}
 	repeats := m.Repeats
 	if repeats == 0 {
