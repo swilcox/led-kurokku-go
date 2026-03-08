@@ -7,8 +7,53 @@
           hx-swap="innerHTML">
       <div class="form-group">
         <label for="message">Message</label>
+        <div class="weather-icons-row">
+          <button type="button" class="weather-btn" onclick="insertWeather('sunny')" title="Sunny">
+            <svg class="weather-icon"><use href="#wi-sun"/></svg>
+            sunny
+          </button>
+          <button type="button" class="weather-btn" onclick="insertWeather('cloudy')" title="Cloudy">
+            <svg class="weather-icon"><use href="#wi-cloud"/></svg>
+            cloudy
+          </button>
+          <button type="button" class="weather-btn" onclick="insertWeather('partly cloudy')" title="Partly Cloudy">
+            <svg class="weather-icon"><use href="#wi-partly-cloudy"/></svg>
+            p.cloudy
+          </button>
+          <button type="button" class="weather-btn" onclick="insertWeather('rain')" title="Rain">
+            <svg class="weather-icon"><use href="#wi-rain"/></svg>
+            rain
+          </button>
+          <button type="button" class="weather-btn" onclick="insertWeather('snow')" title="Snow">
+            <svg class="weather-icon"><use href="#wi-snow"/></svg>
+            snow
+          </button>
+          <button type="button" class="weather-btn" onclick="insertWeather('storm')" title="Thunderstorm">
+            <svg class="weather-icon"><use href="#wi-storm"/></svg>
+            storm
+          </button>
+          <button type="button" class="weather-btn" onclick="insertWeather('wind')" title="Windy">
+            <svg class="weather-icon"><use href="#wi-wind"/></svg>
+            wind
+          </button>
+          <button type="button" class="weather-btn" onclick="insertWeather('fog')" title="Fog">
+            <svg class="weather-icon"><use href="#wi-fog"/></svg>
+            fog
+          </button>
+        </div>
         <textarea id="message" name="message" rows="3" required placeholder="Alert message text..."></textarea>
       </div>
+      <script>
+        function insertWeather(condition) {
+          var ta = document.getElementById('message');
+          var pos = ta.selectionStart;
+          var text = ta.value;
+          var insert = condition + ' ';
+          ta.value = text.substring(0, pos) + insert + text.substring(pos);
+          ta.selectionStart = ta.selectionEnd = pos + insert.length;
+          ta.focus();
+        }
+      </script>
       <div class="form-group">
         <label for="alert_id">Alert ID</label>
         <input type="text" id="alert_id" name="alert_id" value="{{.AlertID}}">
