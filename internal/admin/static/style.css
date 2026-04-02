@@ -77,17 +77,51 @@ h3 { font-size: 1.1rem; margin-bottom: 0.5rem; }
 a { color: var(--accent); text-decoration: none; }
 a:hover { color: var(--accent-hover); }
 
-.header {
+.navbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--border);
 }
 
-.btn {
+.navbar-title {
+  display: flex;
+  align-items: center;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.navbar-title:hover {
+  color: var(--accent);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.header h2 {
+  margin-bottom: 0;
+}
+
+.title-icon {
   display: inline-block;
+  width: 1.2em;
+  height: 1.2em;
+  vertical-align: -0.15em;
+  margin-right: 0.3em;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 0.5rem 1rem;
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -95,6 +129,9 @@ a:hover { color: var(--accent-hover); }
   color: var(--text);
   cursor: pointer;
   font-size: 0.9rem;
+  font-family: inherit;
+  line-height: 1.4;
+  text-decoration: none;
   transition: background 0.15s;
 }
 .btn:hover { background: var(--border); }
@@ -102,7 +139,7 @@ a:hover { color: var(--accent-hover); }
 .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
 .btn-danger { color: var(--error); border-color: var(--error); }
 .btn-danger:hover { background: var(--error); color: white; }
-.btn-sm { padding: 0.25rem 0.6rem; font-size: 0.8rem; }
+.btn-sm { padding: 0.25rem 0.6rem; font-size: 0.8rem; line-height: 1.4; vertical-align: middle; }
 
 .btn-icon {
   background: none;
@@ -254,6 +291,13 @@ pre {
 }
 .breadcrumb a { color: var(--text-muted); }
 .breadcrumb a:hover { color: var(--accent); }
+
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
 
 .inline-form { display: inline; }
 
