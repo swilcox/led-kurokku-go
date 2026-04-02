@@ -43,12 +43,15 @@ func (s *Server) handleInstanceCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if name == "" || host == "" {
+		slog.Warn("instance create: missing required fields", "name", name, "host", host)
 		renderFormError(w, "", name, host, port, "Name and host are required.")
 		return
 	}
 
 	// Verify connectivity before saving.
+	slog.Debug("testing redis connection", "host", host, "port", port)
 	if err := TestConnection(host, port); err != nil {
+		slog.Warn("instance create: redis connection failed", "host", host, "port", port, "error", err)
 		renderFormError(w, "", name, host, port, fmt.Sprintf("Redis connection failed: %v", err))
 		return
 	}
@@ -60,10 +63,12 @@ func (s *Server) handleInstanceCreate(w http.ResponseWriter, r *http.Request) {
 
 	inst := Instance{ID: id, Name: name, Host: host, Port: port}
 	if err := s.store.Add(inst); err != nil {
+		slog.Error("instance create: store save failed", "id", id, "error", err)
 		renderFormError(w, "", name, host, port, fmt.Sprintf("Save failed: %v", err))
 		return
 	}
 
+	slog.Info("instance created", "id", id, "name", name, "host", host, "port", port)
 	if err := renderPartial(w, "instance_row", inst); err != nil {
 		slog.Error("render failed", "template", "instance_row", "error", err)
 	}
@@ -87,6 +92,7 @@ func (s *Server) handleInstanceUpdate(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	inst := s.store.Get(id)
 	if inst == nil {
+		slog.Warn("instance update: not found", "id", id)
 		http.NotFound(w, r)
 		return
 	}
@@ -100,6 +106,7 @@ func (s *Server) handleInstanceUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if name == "" || host == "" {
+		slog.Warn("instance update: missing required fields", "id", id, "name", name, "host", host)
 		renderFormError(w, id, name, host, port, "Name and host are required.")
 		return
 	}
@@ -108,10 +115,12 @@ func (s *Server) handleInstanceUpdate(w http.ResponseWriter, r *http.Request) {
 	inst.Host = host
 	inst.Port = port
 	if err := s.store.Update(*inst); err != nil {
+		slog.Error("instance update: store save failed", "id", id, "error", err)
 		renderFormError(w, id, name, host, port, fmt.Sprintf("Save failed: %v", err))
 		return
 	}
 
+	slog.Info("instance updated", "id", id, "name", name, "host", host, "port", port)
 	if err := renderPartial(w, "instance_row", *inst); err != nil {
 		slog.Error("render failed", "template", "instance_row", "error", err)
 	}
@@ -120,9 +129,11 @@ func (s *Server) handleInstanceUpdate(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleInstanceDelete(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	if err := s.store.Remove(id); err != nil {
+		slog.Warn("instance delete: not found", "id", id)
 		http.NotFound(w, r)
 		return
 	}
+	slog.Info("instance deleted", "id", id)
 	// Return empty body so htmx removes the row.
 	w.WriteHeader(http.StatusOK)
 }
@@ -133,10 +144,13 @@ func (s *Server) handleInstanceTest(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	slog.Debug("testing redis connection", "id", inst.ID, "host", inst.Host, "port", inst.Port)
 	err := TestConnection(inst.Host, inst.Port)
 	if err != nil {
+		slog.Info("instance connection test failed", "id", inst.ID, "host", inst.Host, "port", inst.Port, "error", err)
 		fmt.Fprintf(w, `<span id="status-%s" class="badge badge-error">offline</span>`, inst.ID)
 	} else {
+		slog.Info("instance connection test succeeded", "id", inst.ID, "host", inst.Host, "port", inst.Port)
 		fmt.Fprintf(w, `<span id="status-%s" class="badge badge-success">online</span>`, inst.ID)
 	}
 }
@@ -146,10 +160,12 @@ func (s *Server) handleInstanceTest(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleConfigView(w http.ResponseWriter, r *http.Request) {
 	inst := s.store.Get(r.PathValue("id"))
 	if inst == nil {
+		slog.Warn("config view: instance not found", "id", r.PathValue("id"))
 		http.NotFound(w, r)
 		return
 	}
 
+	slog.Debug("fetching config from redis", "id", inst.ID, "host", inst.Host, "port", inst.Port)
 	cfg, found, err := FetchConfig(inst.Host, inst.Port)
 	data := map[string]interface{}{
 		"Instance":       inst,
@@ -163,6 +179,7 @@ func (s *Server) handleConfigView(w http.ResponseWriter, r *http.Request) {
 		"PreviewDelay":   5,
 	}
 	if err != nil {
+		slog.Error("config view: fetch failed", "id", inst.ID, "error", err)
 		data["Error"] = fmt.Sprintf("Failed to fetch config: %v", err)
 	}
 	if cfg == nil {
@@ -257,6 +274,7 @@ func (s *Server) handleConfigEdit(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleConfigSave(w http.ResponseWriter, r *http.Request) {
 	inst := s.store.Get(r.PathValue("id"))
 	if inst == nil {
+		slog.Warn("config save: instance not found", "id", r.PathValue("id"))
 		http.NotFound(w, r)
 		return
 	}
@@ -264,19 +282,23 @@ func (s *Server) handleConfigSave(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	cfg, parseErr := parseConfigForm(r)
 	if parseErr != "" {
+		slog.Warn("config save: form parse error", "id", inst.ID, "error", parseErr)
 		renderErrorAlert(w, parseErr)
 		return
 	}
 	if err := cfg.Validate(); err != nil {
+		slog.Warn("config save: validation error", "id", inst.ID, "error", err)
 		renderErrorAlert(w, fmt.Sprintf("Config validation error: %v", err))
 		return
 	}
 
 	if err := SaveConfig(inst.Host, inst.Port, cfg); err != nil {
+		slog.Error("config save: redis save failed", "id", inst.ID, "host", inst.Host, "error", err)
 		renderErrorAlert(w, fmt.Sprintf("Failed to save: %v", err))
 		return
 	}
 
+	slog.Info("config saved", "id", inst.ID, "display_type", cfg.Display.Type, "widgets", len(cfg.Widgets))
 	w.Header().Set("HX-Redirect", fmt.Sprintf("/instances/%s/config", inst.ID))
 	w.WriteHeader(http.StatusOK)
 }
@@ -320,6 +342,7 @@ func (s *Server) handleConfigJSON(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleConfigJSONSave(w http.ResponseWriter, r *http.Request) {
 	inst := s.store.Get(r.PathValue("id"))
 	if inst == nil {
+		slog.Warn("config json save: instance not found", "id", r.PathValue("id"))
 		http.NotFound(w, r)
 		return
 	}
@@ -330,19 +353,23 @@ func (s *Server) handleConfigJSONSave(w http.ResponseWriter, r *http.Request) {
 	// Validate JSON and config semantics.
 	cfg, err := config.Parse([]byte(jsonStr))
 	if err != nil {
+		slog.Warn("config json save: invalid JSON", "id", inst.ID, "error", err)
 		renderErrorAlert(w, fmt.Sprintf("Invalid JSON: %v", err))
 		return
 	}
 	if err := cfg.Validate(); err != nil {
+		slog.Warn("config json save: validation error", "id", inst.ID, "error", err)
 		renderErrorAlert(w, fmt.Sprintf("Config validation error: %v", err))
 		return
 	}
 
 	if err := SaveConfigJSON(inst.Host, inst.Port, jsonStr); err != nil {
+		slog.Error("config json save: redis save failed", "id", inst.ID, "host", inst.Host, "error", err)
 		renderErrorAlert(w, fmt.Sprintf("Failed to save: %v", err))
 		return
 	}
 
+	slog.Info("config saved via json", "id", inst.ID, "display_type", cfg.Display.Type, "widgets", len(cfg.Widgets))
 	w.Header().Set("HX-Redirect", fmt.Sprintf("/instances/%s/config", inst.ID))
 	w.WriteHeader(http.StatusOK)
 }
@@ -431,6 +458,7 @@ func (s *Server) handleAlertSend(w http.ResponseWriter, r *http.Request) {
 	deleteAfter := r.FormValue("delete_after_display") == "on"
 
 	if message == "" {
+		slog.Warn("alert send: empty message", "id", inst.ID)
 		renderErrorAlert(w, "Message is required.")
 		return
 	}
@@ -474,11 +502,14 @@ func (s *Server) handleAlertSend(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	slog.Debug("sending alert to redis", "instance", inst.ID, "alert_id", alertID, "priority", priority, "ttl", ttl)
 	if err := SendAlert(inst.Host, inst.Port, alertID, string(alertJSON), ttl); err != nil {
+		slog.Error("alert send: redis write failed", "instance", inst.ID, "alert_id", alertID, "error", err)
 		renderErrorAlert(w, fmt.Sprintf("Failed to send alert: %v", err))
 		return
 	}
 
+	slog.Info("alert sent", "instance", inst.ID, "alert_id", alertID, "priority", priority, "message_len", len(message), "ttl", ttl)
 	fmt.Fprintf(w, `<div class="alert alert-success">Alert sent: <strong>%s</strong> (key: kurokku:alert:%s, priority: %d, display: %s)</div>`,
 		template.HTMLEscapeString(message),
 		template.HTMLEscapeString(alertID),

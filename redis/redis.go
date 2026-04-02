@@ -11,6 +11,17 @@ import (
 	"github.com/swilcox/led-kurokku-go/config"
 )
 
+// slogRedisLogger adapts go-redis internal logging to slog.
+type slogRedisLogger struct{}
+
+func (slogRedisLogger) Printf(ctx context.Context, format string, v ...interface{}) {
+	slog.Warn(fmt.Sprintf(format, v...), "source", "go-redis")
+}
+
+func init() {
+	redis.SetLogger(slogRedisLogger{})
+}
+
 const (
 	alertKeyPrefix       = "kurokku:alert:"
 	alertKeyspacePattern = "__keyspace@0__:" + alertKeyPrefix + "*"

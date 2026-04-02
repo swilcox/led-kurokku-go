@@ -1,6 +1,10 @@
 package admin
 
-import "net/http"
+import (
+	"log/slog"
+	"net/http"
+	"time"
+)
 
 // Server is the kurokku-admin HTTP server.
 type Server struct {
@@ -43,7 +47,26 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("DELETE /instances/{id}/config/widgets/{idx}", s.handleWidgetRemove)
 }
 
-// ServeHTTP implements http.Handler.
+// responseRecorder wraps http.ResponseWriter to capture the status code.
+type responseRecorder struct {
+	http.ResponseWriter
+	status int
+}
+
+func (rr *responseRecorder) WriteHeader(code int) {
+	rr.status = code
+	rr.ResponseWriter.WriteHeader(code)
+}
+
+// ServeHTTP implements http.Handler with request logging.
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	s.mux.ServeHTTP(w, r)
+	start := time.Now()
+	rr := &responseRecorder{ResponseWriter: w, status: http.StatusOK}
+	s.mux.ServeHTTP(rr, r)
+	slog.Info("http request",
+		"method", r.Method,
+		"path", r.URL.Path,
+		"status", rr.status,
+		"duration", time.Since(start),
+	)
 }

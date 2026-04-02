@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -24,9 +24,9 @@ func main() {
 
 	srv := admin.NewServer(store)
 
-	log.Printf("kurokku-admin listening on %s (store: %s)", *addr, *storePath)
+	slog.Info("kurokku-admin starting", "addr", *addr, "store", *storePath)
 	if err := http.ListenAndServe(*addr, srv); err != nil {
-		fmt.Fprintf(os.Stderr, "server error: %v\n", err)
+		slog.Error("server exited", "error", err)
 		os.Exit(1)
 	}
 }
