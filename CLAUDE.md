@@ -50,6 +50,7 @@ Widgets accept `display.Display` in `Run()` and type-assert to the sub-interface
 ## Key Patterns
 
 - Widget `duration: "0s"` means no timeout (widget runs to completion)
+- Alert widgets should use `duration: "0s"` so each alert runs for its own `display_duration` without being cut short by a widget-level timeout
 - Redis is fully optional — `redis.NewFromEnv()` returns `(nil, nil)` when no env vars set
 - `RedisAlert`/`RedisMessage` wrappers are only constructed when Redis is connected
 - Alert interrupt: keyspace notification cancels current widget, fetches+displays all alerts, then resumes cycle

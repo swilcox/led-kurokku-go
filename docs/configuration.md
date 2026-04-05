@@ -103,7 +103,7 @@ Widgets are processed in array order. Each has a `type` and shared fields, plus 
 |-------|------|---------|-------------|
 | `type` | string | — | Widget type: `clock`, `message`, `alert`, `animation` |
 | `enabled` | bool | — | Whether the widget is included in the cycle |
-| `duration` | duration | — | Max run time. `"0s"` = no timeout (runs to completion) |
+| `duration` | duration | — | Max run time. `"0s"` = no timeout (runs to completion). Alert widgets should use `"0s"` so each alert gets its full `display_duration`. |
 | `cron` | string | — | Optional cron expression. Widget skipped if it doesn't match |
 
 ### Clock Fields
@@ -218,7 +218,7 @@ All duration fields use Go's `time.ParseDuration` format:
       "text": "--F", "dynamic_source": "kurokku:weather:temp:spring_hill"
     },
     {
-      "type": "alert", "enabled": true, "duration": "30s", "scroll_speed": "50ms",
+      "type": "alert", "enabled": true, "duration": "0s", "scroll_speed": "50ms",
       "alerts": [
         { "id": "fallback", "message": "No alerts", "priority": 99, "display_duration": "3s" }
       ]

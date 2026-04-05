@@ -198,13 +198,17 @@ flowchart TD
 
 `RedisAlert` (and `segment.RedisAlert`) fetches alerts from Redis (`SCAN kurokku:alert:*`) on each `Run`. Falls back to the `alerts` config array on error. Alert deletions are forwarded to Redis via `DeleteAlert`.
 
+### Duration
+
+Use `"duration": "0s"` for alert widgets. Each alert has its own `display_duration` that controls how long it is shown. A non-zero widget duration acts as a hard ceiling across all alerts — if the cumulative alert time exceeds it, later alerts will be cut short or skipped entirely. With `"0s"`, the widget runs until every alert has been displayed for its full `display_duration`, then exits naturally.
+
 ### Configuration
 
 ```json
 {
   "type": "alert",
   "enabled": true,
-  "duration": "30s",
+  "duration": "0s",
   "scroll_speed": "50ms",
   "alerts": [
     {

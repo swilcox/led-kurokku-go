@@ -147,7 +147,7 @@ The `display` block selects the hardware backend and its settings:
     {
       "type": "alert",
       "enabled": true,
-      "duration": "30s",
+      "duration": "0s",
       "scroll_speed": "50ms",
       "alerts": [
         {
@@ -209,7 +209,7 @@ The `display` block selects the hardware backend and its settings:
 |-------------|:-----:|:-------:|-------------|
 | `clock`     | Yes | Yes | Time display with blinking colon. `format_24h` defaults to `true` (24-hour); set to `false` for 12-hour. 12h PM uses double-blink pattern. |
 | `message`   | Yes | Yes | Static or scrolling text. Supports `dynamic_source` for Redis-backed text. Pixel: 50ms scroll speed. Segment: 300ms per character. |
-| `alert`     | Yes | Yes | Displays prioritized alerts. With Redis, fetches from `kurokku:alert:*` keys; without, uses the `alerts` array. |
+| `alert`     | Yes | Yes | Displays prioritized alerts. Use `"duration": "0s"` so each alert gets its full `display_duration`. With Redis, fetches from `kurokku:alert:*` keys; without, uses the `alerts` array. |
 | `animation` | Yes | Yes | Pixel: procedural (`rain`, `static`, `bounce`, `sine`, `scanner`, `life`) or custom `frames`. Segment: procedural (`rain`, `static`, `scanner`, `race`) or custom `segment_frames`. |
 
 ### Cron Scheduling
