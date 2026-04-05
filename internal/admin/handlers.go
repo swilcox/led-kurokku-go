@@ -650,6 +650,9 @@ func parseConfigForm(r *http.Request) (*config.Config, string) {
 		if r.FormValue(prefix+"format_24h") == "on" {
 			t := true
 			wc.Format24h = &t
+		} else if wc.Type == "clock" {
+			f := false
+			wc.Format24h = &f
 		}
 		if repStr := r.FormValue(prefix + "repeats"); repStr != "" {
 			rep, err := strconv.Atoi(repStr)

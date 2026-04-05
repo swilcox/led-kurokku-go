@@ -29,7 +29,10 @@ func (rm *RedisMessage) Run(ctx context.Context, disp display.Display) error {
 	if override, ok, err := rm.Fetcher.FetchMessageText(ctx, rm.Key); err != nil {
 		slog.Warn("redis message fetch failed, using fallback", "key", rm.Key, "error", err)
 	} else if ok {
+		slog.Debug("redis message using dynamic text", "key", rm.Key)
 		text = override
+	} else {
+		slog.Info("redis message key not found, using fallback", "key", rm.Key, "fallback", rm.FallbackText)
 	}
 
 	m := &Message{

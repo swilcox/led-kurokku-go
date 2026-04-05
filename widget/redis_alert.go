@@ -31,6 +31,8 @@ func (ra *RedisAlert) Run(ctx context.Context, disp display.Display) error {
 	if err != nil {
 		slog.Warn("redis alert fetch failed, using fallback", "error", err)
 		alerts = ra.Fallback
+	} else if len(alerts) == 0 {
+		slog.Debug("redis alert no active alerts found")
 	}
 
 	a := &Alert{

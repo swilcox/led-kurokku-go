@@ -70,7 +70,10 @@ func (e *Engine) Run(ctx context.Context) error {
 		}
 	}
 
+	hasAlertWidget := e.hasAlertWidget()
+
 	for {
+	cycle:
 		for i, w := range widgets {
 			if ctx.Err() != nil {
 				return nil
@@ -98,9 +101,17 @@ func (e *Engine) Run(ctx context.Context) error {
 			case <-done:
 				cancel()
 			case <-alertCh:
-				// Alert interrupt: cancel current widget and show alerts.
+				// Alert interrupt: cancel current widget.
 				cancel()
 				<-done // wait for widget goroutine to finish
+				if hasAlertWidget {
+					// Restart the widget cycle so the configured alert
+					// widget picks up the new alert naturally.
+					slog.Info("alert interrupt, restarting widget cycle")
+					break cycle
+				}
+				// No alert widget configured; display alerts ad-hoc.
+				slog.Info("alert interrupt, no alert widget configured, displaying ad-hoc")
 				e.runInterruptAlerts(ctx)
 			case <-ctx.Done():
 				cancel()
@@ -113,6 +124,16 @@ func (e *Engine) Run(ctx context.Context) error {
 			}
 		}
 	}
+}
+
+// hasAlertWidget reports whether any configured widget is of type "alert".
+func (e *Engine) hasAlertWidget() bool {
+	for _, wc := range e.cfg.Widgets {
+		if wc.Type == "alert" {
+			return true
+		}
+	}
+	return false
 }
 
 // runInterruptAlerts fetches alerts from Redis and displays them.

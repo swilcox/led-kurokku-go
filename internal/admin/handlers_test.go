@@ -407,6 +407,35 @@ func TestParseConfigForm_Basic(t *testing.T) {
 	}
 }
 
+func TestParseConfigForm_ClockUnchecked24h(t *testing.T) {
+	form := url.Values{
+		"display.type":     {"terminal"},
+		"brightness.high":  {"15"},
+		"brightness.low":   {"1"},
+		"widgets[0].type":     {"clock"},
+		"widgets[0].enabled":  {"on"},
+		"widgets[0].duration": {"10s"},
+		// format_24h checkbox NOT included — simulates unchecked
+	}
+	req := httptest.NewRequest("POST", "/", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.ParseForm()
+
+	cfg, errMsg := parseConfigForm(req)
+	if errMsg != "" {
+		t.Fatalf("unexpected error: %s", errMsg)
+	}
+	if len(cfg.Widgets) != 1 {
+		t.Fatalf("expected 1 widget, got %d", len(cfg.Widgets))
+	}
+	if cfg.Widgets[0].Format24h == nil {
+		t.Fatal("expected format_24h to be set, got nil")
+	}
+	if *cfg.Widgets[0].Format24h {
+		t.Error("expected format_24h = false when checkbox unchecked")
+	}
+}
+
 func TestParseConfigForm_WithLocation(t *testing.T) {
 	form := url.Values{
 		"display.type":      {"terminal"},
