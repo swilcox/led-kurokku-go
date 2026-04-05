@@ -14,12 +14,21 @@ import (
 	"github.com/swilcox/led-kurokku-go/display"
 	"github.com/swilcox/led-kurokku-go/engine"
 	"github.com/swilcox/led-kurokku-go/redis"
+	"github.com/swilcox/led-kurokku-go/version"
 )
 
 func main() {
 	displayOverride := flag.String("display", "", "display type override (terminal, max7219, tm1637, ht16k33, terminal_seg7, terminal_seg14)")
 	configPath := flag.String("config", "config.json", "path to config file")
+	showVersion := flag.Bool("version", false, "print version and exit")
 	flag.Parse()
+
+	if *showVersion {
+		fmt.Println("kurokku", version.String())
+		return
+	}
+
+	slog.Info("kurokku starting", "version", version.String())
 
 	// Initialize Redis (optional).
 	rds, err := redis.NewFromEnv()

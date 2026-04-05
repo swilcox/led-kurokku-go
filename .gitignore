@@ -1,8 +1,8 @@
 # Binaries
-kurokku
-kurokku-pi
-kurokku-admin
-kurokku-admin-pi
+/kurokku
+/kurokku-pi
+/kurokku-admin
+/kurokku-admin-pi
 /genfont
 
 # Test coverage
