@@ -68,7 +68,7 @@ func previewTextForWidget(w config.WidgetConfig, cfg *config.Config, host string
 		if h == 0 {
 			h = 12
 		}
-		return fmt.Sprintf("%d:%02d", h, now.Minute())
+		return fmt.Sprintf("%2d:%02d", h, now.Minute())
 	case "message":
 		if w.DynamicSource != "" {
 			val, err := FetchKey(host, port, w.DynamicSource)

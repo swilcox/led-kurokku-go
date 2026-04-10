@@ -41,11 +41,13 @@ func (c *Clock) Run(ctx context.Context, disp display.Display) error {
 			}
 		}
 
-		colonOn := fmt.Sprintf("%d:%02d", hour, minute)
-		colonOff := fmt.Sprintf("%d %02d", hour, minute)
-		if c.Format24h || hour >= 10 {
+		var colonOn, colonOff string
+		if c.Format24h {
 			colonOn = fmt.Sprintf("%02d:%02d", hour, minute)
 			colonOff = fmt.Sprintf("%02d %02d", hour, minute)
+		} else {
+			colonOn = fmt.Sprintf("%2d:%02d", hour, minute)
+			colonOff = fmt.Sprintf("%2d %02d", hour, minute)
 		}
 
 		if !c.Format24h && isPM {
